@@ -74,12 +74,12 @@ const Content = () => {
     });
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 12, mb: 4, pt: 2 }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
           Community Market
         </Typography>
-        <Typography variant="body1" sx={{color: "text.secondary"}}>
+        <Typography variant="body1" sx={{color: "text.primary"}}>
           Find the best peer-to-peer and licensed exchange rates.
         </Typography>
       </Box>
@@ -87,12 +87,12 @@ const Content = () => {
         <Paper elevation={0} sx={{ p: {xs: 2, md: 4}, mb: 4, borderRadius: '16px', backgroundColor: 'background.paper', border: '1px solid #e2e8f0' }}>
             <Box sx={{ display: 'flex', flexDirection: {xs: 'column', md: 'row'}, gap: 2, alignItems: 'center', width: '100%' }}>
                 <FormControl fullWidth>
-                    <InputLabel htmlFor="amount-input">Amount</InputLabel>
+                    <InputLabel htmlFor="amount-input" sx={{color: "text.primary"}}>Amount</InputLabel>
                     <OutlinedInput id="amount-input" value={amount} onChange={(e) => setAmount(e.target.value)} label="Amount" startAdornment={<InputAdornment position="start">$</InputAdornment>} />
                 </FormControl>
                 
                 <FormControl fullWidth>
-                    <InputLabel id="from-currency-label">From</InputLabel>
+                    <InputLabel id="from-currency-label" sx={{color: "text.primary"}}>From</InputLabel>
                     <Select labelId="from-currency-label" value={fromCurrency} onChange={(e) => setFromCurrency(e.target.value)} label="From">
                         <MenuItem value="USD">USD</MenuItem>
                         <MenuItem value="MYR">MYR</MenuItem>
@@ -106,7 +106,7 @@ const Content = () => {
                 </Button>
 
                 <FormControl fullWidth>
-                    <InputLabel id="to-currency-label">To</InputLabel>
+                    <InputLabel id="to-currency-label" sx={{color: "text.primary"}}>To</InputLabel>
                     <Select labelId="to-currency-label" value={toCurrency} onChange={(e) => setToCurrency(e.target.value)} label="To">
                         <MenuItem value="MYR">MYR</MenuItem>
                         <MenuItem value="USD">USD</MenuItem>
@@ -133,53 +133,109 @@ const Content = () => {
         </ToggleButtonGroup>
       </Box>
 
-      <Paper elevation={0} sx={{ mt: 2, backgroundColor: 'transparent' }}>
-        <Box sx={{p: 2, display: { xs:'none', md: 'flex'}, alignItems: 'center', color: 'text.secondary', borderBottom: '1px solid #e2e8f0' }}>
-           <Box sx={{ width: '5%' }}></Box>
-           <Box sx={{ width: '25%' }}>Trading Pair</Box>
-           <Box sx={{ width: '25%' }}>Provider</Box>
-           <Box sx={{ width: '15%', textAlign: 'right' }}>Rate</Box>
-           <Box sx={{ width: '15%', textAlign: 'right' }}>24h Change</Box>
-           <Box sx={{ width: '15%', textAlign: 'right' }}></Box>
+      <Box sx={{ mt: 2 }}>
+        {/* Desktop Header */}
+        <Box sx={{ 
+          display: { xs: 'none', md: 'flex' }, 
+          p: 2, 
+          color: 'text.primary', 
+          borderBottom: '1px solid #e2e8f0',
+          alignItems: 'center'
+        }}>
+          <Box sx={{ width: '5%' }}></Box>
+          <Box sx={{ width: '25%' }}>Trading Pair</Box>
+          <Box sx={{ width: '25%' }}>Provider</Box>
+          <Box sx={{ width: '15%', textAlign: 'right' }}>Rate</Box>
+          <Box sx={{ width: '15%', textAlign: 'right' }}>24h Change</Box>
+          <Box sx={{ width: '15%', textAlign: 'right' }}></Box>
         </Box>
 
+        {/* Table Rows */}
         {filteredPairs.map((pair) => (
-          <Paper key={pair.id} sx={{ mb: 1.5, p: {xs: 2, md: 2.5}, borderRadius: '12px', transition: 'box-shadow 0.3s', '&:hover': { boxShadow: '0 4px 20px rgba(0,0,0,0.08)'}, border: '1px solid #e2e8f0' }}>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
-              <Box sx={{ width: '10%', md: '5%', textAlign: 'center', cursor: 'pointer'}} onClick={() => toggleFavorite(pair.id)}>
+          <Paper key={pair.id} sx={{ 
+            mb: 1.5, 
+            p: { xs: 2, md: 2.5 }, 
+            borderRadius: '12px', 
+            transition: 'box-shadow 0.3s', 
+            '&:hover': { boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }, 
+            border: '1px solid #e2e8f0' 
+          }}>
+            {/* Desktop Layout */}
+            <Box sx={{ 
+              display: { xs: 'none', md: 'flex' }, 
+              alignItems: 'center'
+            }}>
+              <Box sx={{ width: '5%', textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleFavorite(pair.id)}>
                 {pair.isFavorite ? <StarIcon sx={{color: 'secondary.main'}} /> : <StarBorderIcon sx={{color: 'text.disabled'}} />}
               </Box>
-              <Box sx={{ width: '90%', md: '25%', order: {xs: 1, md: 0} }}>
-                <Box>
-                    <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-                        {pair.from}/{pair.to}
-                    </Typography>
-                    <Chip label={pair.type} size="small" color={pair.type === 'P2P' ? 'secondary' : 'primary'} sx={{opacity: 0.8}} />
-                </Box>
+              <Box sx={{ width: '25%' }}>
+                <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                  {pair.from}/{pair.to}
+                </Typography>
+                <Chip label={pair.type} size="small" color={pair.type === 'P2P' ? 'secondary' : 'primary'} sx={{opacity: 0.8}} />
               </Box>
-               <Box sx={{ width: { xs: '100%', md: '25%'}, order: {xs: 2, md: 1}, mt: {xs: 1, md: 0} }}>
-                 <Typography variant="body1">{pair.provider}</Typography>
+              <Box sx={{ width: '25%' }}>
+                <Typography variant="body1">{pair.provider}</Typography>
               </Box>
-              <Box sx={{ width: { xs: '50%', md: '15%'}, order: {xs: 3, md: 2}, textAlign: {xs: 'left', md: 'right'} }}>
+              <Box sx={{ width: '15%', textAlign: 'right' }}>
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
                   {pair.rate.toFixed(4)}
                 </Typography>
               </Box>
-              <Box sx={{ width: { xs: '50%', md: '15%'}, order: {xs: 4, md: 3}, textAlign: 'right' }}>
-                 <Chip 
+              <Box sx={{ width: '15%', textAlign: 'right' }}>
+                <Chip 
+                  label={`${pair.change.toFixed(2)}%`}
+                  color={pair.change >= 0 ? 'success' : 'error'}
+                  size="small"
+                  sx={{ fontWeight: 'bold' }}
+                />
+              </Box>
+              <Box sx={{ width: '15%', textAlign: 'right' }}>
+                <Button variant='contained' size='medium'>Trade</Button>
+              </Box>
+            </Box>
+
+            {/* Mobile Layout */}
+            <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                    {pair.from}/{pair.to}
+                  </Typography>
+                  <Chip label={pair.type} size="small" color={pair.type === 'P2P' ? 'secondary' : 'primary'} sx={{opacity: 0.8}} />
+                </Box>
+                <Box sx={{ cursor: 'pointer' }} onClick={() => toggleFavorite(pair.id)}>
+                  {pair.isFavorite ? <StarIcon sx={{color: 'secondary.main'}} /> : <StarBorderIcon sx={{color: 'text.disabled'}} />}
+                </Box>
+              </Box>
+              
+              <Typography variant="body2" color="text.primary" sx={{ mb: 1 }}>
+                Provider: <Typography component="span" variant="body1" sx={{ fontWeight: 500 }}>{pair.provider}</Typography>
+              </Typography>
+              
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.primary">Rate</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                    {pair.rate.toFixed(4)}
+                  </Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.primary">24h Change</Typography>
+                  <Chip 
                     label={`${pair.change.toFixed(2)}%`}
                     color={pair.change >= 0 ? 'success' : 'error'}
                     size="small"
                     sx={{ fontWeight: 'bold' }}
-                 />
+                  />
+                </Box>
               </Box>
-               <Box sx={{ width: { xs: '100%', md: '15%'}, order: {xs: 5, md: 4}, textAlign: 'right', mt: {xs: 2, md: 0} }}>
-                 <Button variant='contained' size='medium'>Trade</Button>
-              </Box>
+              
+              <Button variant='contained' size='medium' fullWidth>Trade</Button>
             </Box>
           </Paper>
         ))}
-      </Paper>
+      </Box>
     </Container>
   );
 };
