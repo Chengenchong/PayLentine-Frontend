@@ -1,5 +1,5 @@
 import Header from '../components/Header';
-import Hero from '../components/Hero';
+import LandingPage from '../pages/LandingPage';
 import Features from '../components/Features';
 import Footer from '../components/Footer';
 
@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <>
       <Header />
-      <Hero />
+      <LandingPage />
       <Features />
       <Footer />
     </>

@@ -6,54 +6,69 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#6366f1', // Indigo
-      light: '#a5b4fc',
-      dark: '#4338ca',
+      main: '#9C89B8',
+      light: '#B4A2CD', // Lighter shade of main
+      dark: '#856DA9',
     },
     secondary: {
-      main: '#ec4899', // Pink
-      light: '#f472b6',
-      dark: '#be185d',
+      main: '#4DA1A9',
+      light: '#6ABDBF', // Lighter shade of main
+      dark: '#41898F',
     },
     background: {
-      default: '#ffffff',
-      paper: '#f8fafc',
+      default: '#F8F6F6',
+      paper: '#ffffff',
     },
     text: {
-      primary: '#1e293b',
-      secondary: '#64748b',
+      primary: '#171635',
+      secondary: '#FFA630',
     },
   },
   typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Fredoka", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
+      fontFamily: '"Outfit", "Roboto", "Helvetica", "Arial", sans-serif',
       fontSize: '3.5rem',
       fontWeight: 700,
       lineHeight: 1.2,
     },
     h2: {
+      fontFamily: '"Outfit", "Roboto", "Helvetica", "Arial", sans-serif',
       fontSize: '2.5rem',
       fontWeight: 600,
       lineHeight: 1.3,
     },
     h3: {
+      fontFamily: '"Outfit", "Roboto", "Helvetica", "Arial", sans-serif',
       fontSize: '2rem',
       fontWeight: 600,
       lineHeight: 1.4,
     },
     h4: {
+      fontFamily: '"Outfit", "Roboto", "Helvetica", "Arial", sans-serif',
       fontSize: '1.5rem',
       fontWeight: 600,
       lineHeight: 1.4,
     },
+    h5: {
+      fontFamily: '"Outfit", "Roboto", "Helvetica", "Arial", sans-serif',
+    },
+    h6: {
+      fontFamily: '"Outfit", "Roboto", "Helvetica", "Arial", sans-serif',
+    },
     body1: {
+      fontFamily: '"Fredoka", "Roboto", "Helvetica", "Arial", sans-serif',
       fontSize: '1rem',
       lineHeight: 1.6,
     },
     body2: {
+      fontFamily: '"Fredoka", "Roboto", "Helvetica", "Arial", sans-serif',
       fontSize: '0.875rem',
       lineHeight: 1.6,
     },
+    button: {
+      fontFamily: '"Fredoka", "Roboto", "Helvetica", "Arial", sans-serif',
+    }
   },
   shape: {
     borderRadius: 12,
@@ -67,6 +82,7 @@ const theme = createTheme({
           fontWeight: 600,
           padding: '12px 24px',
           borderRadius: '8px',
+          fontFamily: '"Fredoka", "Roboto", "Helvetica", "Arial", sans-serif',
         },
       },
     },
