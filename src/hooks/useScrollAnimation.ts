@@ -12,9 +12,16 @@ export const useScrollAnimation = (options: UseScrollAnimationOptions = {}) => {
   const { threshold = 0.1, rootMargin = '0px', triggerOnce = false } = options;
   const [isVisible, setIsVisible] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -44,21 +51,28 @@ export const useScrollAnimation = (options: UseScrollAnimationOptions = {}) => {
         observer.unobserve(currentRef);
       }
     };
-  }, [threshold, rootMargin, triggerOnce, hasAnimated]);
+  }, [threshold, rootMargin, triggerOnce, hasAnimated, isMounted]);
 
-  return { ref, isVisible };
+  return { ref, isVisible: isMounted ? isVisible : false };
 };
 
 export const useFadeInOnMount = (delay = 0) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [delay]);
+  }, [delay, isMounted]);
 
-  return isVisible;
+  return isMounted ? isVisible : false;
 };
