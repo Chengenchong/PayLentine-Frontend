@@ -17,9 +17,11 @@ import {
   PlayArrow,
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Hero() {
   const [isVisible, setIsVisible] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -27,6 +29,10 @@ export default function Hero() {
     }, 150);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleStartTrading = () => {
+    router.push('/community-market');
+  };
 
   return (
     <Box
@@ -130,6 +136,7 @@ export default function Hero() {
                 variant="contained"
                 size="large"
                 startIcon={<TrendingUp />}
+                onClick={handleStartTrading}
                 sx={{
                   backgroundColor: 'rgba(255, 255, 255, 0.15)',
                   backdropFilter: 'blur(20px)',
