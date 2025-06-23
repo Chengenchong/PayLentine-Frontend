@@ -9,6 +9,7 @@ import {
   Public,
   LocalAtm,
 } from '@mui/icons-material';
+import AnimatedSection from './AnimatedSection';
 
 const features = [
   {
@@ -53,78 +54,80 @@ export default function Features() {
   return (
     <Box sx={{ py: 12, backgroundColor: 'background.paper' }}>
       <Container maxWidth="lg">
-        <Box sx={{ textAlign: 'center', mb: 8 }}>
-          <Typography
-            variant="h2"
-            sx={{
-              mb: 3,
-              background: 'linear-gradient(45deg, #6366f1, #ec4899)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            Why Choose PayLentine?
-          </Typography>
-          <Typography
-            variant="h5"
-            sx={{
-              color: 'text.secondary',
-              maxWidth: 600,
-              mx: 'auto',
-              lineHeight: 1.6,
-            }}
-          >
-            Experience the future of currency exchange with our innovative Web
-            2.5 platform
-          </Typography>
-        </Box>
-
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              md: 'repeat(2, 1fr)',
-              lg: 'repeat(3, 1fr)',
-            },
-            gap: 4,
-          }}
-        >
-          {features.map((feature, index) => (
-            <Card
-              key={index}
+        <AnimatedSection direction="up" threshold={0.2}>
+          <Box sx={{ textAlign: 'center', mb: 8 }}>
+            <Typography
+              variant="h2"
               sx={{
-                height: '100%',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateY(-8px)',
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-                },
+                mb: 3,
+                background: 'linear-gradient(45deg, #6366f1, #ec4899)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
               }}
             >
-              <CardContent
+              Why Choose PayLentine?
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{
+                color: 'text.secondary',
+                maxWidth: 600,
+                mx: 'auto',
+                lineHeight: 1.6,
+              }}
+            >
+              Experience the future of currency exchange with our innovative Web
+              2.5 platform
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: 'repeat(2, 1fr)',
+                lg: 'repeat(3, 1fr)',
+              },
+              gap: 4,
+            }}
+          >
+            {features.map((feature, index) => (
+              <Card
+                key={index}
                 sx={{
-                  p: 4,
                   height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                  },
                 }}
               >
-                <Box sx={{ mb: 3 }}>{feature.icon}</Box>
-                <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-                  {feature.title}
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{ color: 'text.secondary', lineHeight: 1.6 }}
+                <CardContent
+                  sx={{
+                    p: 4,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
                 >
-                  {feature.description}
-                </Typography>
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
+                  <Box sx={{ mb: 3 }}>{feature.icon}</Box>
+                  <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
+                    {feature.title}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ color: 'text.secondary', lineHeight: 1.6 }}
+                  >
+                    {feature.description}
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        </AnimatedSection>
       </Container>
     </Box>
   );
