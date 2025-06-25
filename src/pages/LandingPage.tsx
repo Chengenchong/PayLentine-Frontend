@@ -65,6 +65,17 @@ const features = [
   },
 ];
 
+const bubbleColors = ['#9C89B8', '#4DA1A9', '#E573C0', '#FFD600', '#7FC7FF'];
+const bubbles: { size: number; left: string; top: string; delay: string; duration: string; opacity: number; color: string }[] = Array.from({ length: 10 }).map((_, i) => ({
+  size: 80 + Math.random() * 80,
+  left: `${5 + Math.random() * 90}%`,
+  top: `${5 + Math.random() * 80}%`,
+  delay: `${Math.random() * 2}s`,
+  duration: `${2.5 + Math.random() * 2}s`,
+  opacity: 0.13 + Math.random() * 0.09,
+  color: bubbleColors[i % bubbleColors.length],
+}));
+
 export default function Hero() {
   const [isVisible, setIsVisible] = useState(false);
   const router = useRouter();
@@ -84,30 +95,40 @@ export default function Hero() {
     <>
     <Box
       sx={{
-        background: 'linear-gradient(135deg, #9C89B8 40%, #4DA1A9 86%)',
+        width: '100%',
         minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
+        background: 'linear-gradient(120deg, #bbaaff 0%, #c7bfff 40%, #a7bfff 70%, #b6e0fe 100%)',
         position: 'relative',
         overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
       }}
     >
-      {/* Background Pattern */}
-      <Box
-        sx={{
+      {/* Animated floating bubbles */}
+      {bubbles.map((b, i) => (
+        <Box key={i} sx={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `
-            radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)
-          `,
-        }}
-      />
-
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, mt: 10 }}>
+          width: b.size,
+          height: b.size,
+          left: b.left,
+          top: b.top,
+          borderRadius: '50%',
+          background: b.color,
+          opacity: b.opacity,
+          filter: 'blur(2.5px)',
+          animation: `bubbleFloat ${b.duration} linear infinite`,
+          animationDelay: b.delay,
+          zIndex: 1,
+        }} />
+      ))}
+      <style>{`
+        @keyframes bubbleFloat {
+          0% { transform: translateY(0px) scale(1); }
+          50% { transform: translateY(-60px) scale(1.12); }
+          100% { transform: translateY(0px) scale(1); }
+        }
+      `}</style>
+      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2, mt: 10 }}>
         <Box
           sx={{
             display: 'flex',
