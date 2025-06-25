@@ -9,35 +9,24 @@ import {
   Button,
   Checkbox,
   FormControlLabel,
-  Grid,
   Divider,
   Link,
 } from '@mui/material';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { PersonAdd, Email, Phone, Lock, Person } from '@mui/icons-material';
 
 export default function RegisterContent() {
   const [formData, setFormData] = useState({
     username: '',
-    password: '',
-    confirmPassword: '',
     firstName: '',
     lastName: '',
     email: '',
-    phoneNumber: '',
-    subscribeNewsletter: false,
+    password: '',
+    confirmPassword: '',
     acceptTerms: false,
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 150);
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleInputChange =
     (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,18 +65,6 @@ export default function RegisterContent() {
       newErrors.username = 'Username is required';
     }
 
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    }
-
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'First name is required';
     }
@@ -102,8 +79,16 @@ export default function RegisterContent() {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = 'Phone number is required';
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     if (!formData.acceptTerms) {
@@ -126,291 +111,319 @@ export default function RegisterContent() {
   return (
     <Box
       sx={{
-        background: 'linear-gradient(135deg, #9C89B8 40%, #4DA1A9 86%)',
         minHeight: '100vh',
         display: 'flex',
-        alignItems: 'center',
-        py: 4,
-        pt: 12,
+        background: 'linear-gradient(135deg, #9C89B8 40%, #4DA1A9 86%)',
       }}
     >
-      <Container maxWidth="md">
-        <Paper
-          elevation={8}
-          sx={{
-            borderRadius: 3,
-            overflow: 'hidden',
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(20px)',
-            opacity: isVisible ? 1 : 0,
-            transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'all 0.6s ease-out',
-            '&:hover': {
-              boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.25)',
-              transform: 'translateY(-8px) scale(1.02)',
-              transition: 'all 0.3s ease-out',
-            },
-          }}
-        >
-          {/* Header */}
+      {/* Left Side - Marketing Content */}
+      <Box
+        sx={{
+          flex: 1,
+          display: { xs: 'none', md: 'flex' },
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          p: 6,
+          color: 'white',
+        }}
+      >
+        <Box sx={{ maxWidth: 400, textAlign: 'center' }}>
           <Box
             sx={{
-              background: 'linear-gradient(90deg, #9C89B8, #4DA1A9)',
-              color: 'white',
-              p: 4,
-              textAlign: 'center',
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mb: 4,
+              mx: 'auto',
             }}
           >
-            <PersonAdd sx={{ fontSize: 48, mb: 2 }} />
+            <PersonAdd sx={{ fontSize: 40 }} />
+          </Box>
+
+          <Typography variant="h3" sx={{ fontWeight: 700, mb: 3 }}>
+            Join PayLentine Today!
+          </Typography>
+          <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
+            🎉
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 4, lineHeight: 1.6 }}>
+            Join the revolution in peer-to-peer currency exchange. Experience
+            seamless transactions with better rates, lower fees, and unmatched
+            security.
+          </Typography>
+
+          <Box sx={{ textAlign: 'left', mb: 2 }}>
             <Typography
-              variant="h3"
-              component="h1"
-              sx={{ fontWeight: 700, mb: 1 }}
+              variant="body1"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mb: 2.5,
+                fontSize: '1.1rem',
+              }}
             >
-              Join PayLentine
+              ⚡ Lightning-fast currency matching
             </Typography>
-            <Typography variant="h6" sx={{ opacity: 0.9 }}>
-              Create your account and start revolutionizing currency exchange
+            <Typography
+              variant="body1"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mb: 2.5,
+                fontSize: '1.1rem',
+              }}
+            >
+              💰 Save up to 80% on exchange fees
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mb: 2.5,
+                fontSize: '1.1rem',
+              }}
+            >
+              🌍 Support for 150+ global currencies
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mb: 2.5,
+                fontSize: '1.1rem',
+              }}
+            >
+              🔒 Bank-level security & encryption
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ display: 'flex', alignItems: 'center', fontSize: '1.1rem' }}
+            >
+              🎁 Zero fees for your first 3 exchanges
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Right Side - Form */}
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 4,
+          pt: 12,
+          minHeight: '100vh',
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            maxWidth: 850,
+            width: 690,
+            height: 'fit-content',
+            background: '#F8F6F6',
+            boxShadow: 'none',
+            border: '2px solid #e0e0e0',
+            borderRadius: '12px',
+          }}
+        >
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <PersonAdd sx={{ fontSize: 32, color: '#4DA1A9', mb: 2 }} />
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: 700, color: '#171635', mb: 1 }}
+            >
+              Create Account
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#666' }}>
+              Fill in your details to get started
             </Typography>
           </Box>
 
-          {/* Form */}
-          <Box component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Username */}
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}
+          >
+            {/* Username */}
+            <TextField
+              fullWidth
+              label="Username"
+              variant="outlined"
+              value={formData.username}
+              onChange={handleInputChange('username')}
+              error={!!errors.username}
+              helperText={errors.username}
+              InputLabelProps={{ sx: { color: '#171635' } }}
+              InputProps={{
+                startAdornment: <Person sx={{ mr: 1, color: '#4DA1A9' }} />,
+              }}
+            />
+
+            {/* Name Fields */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 fullWidth
-                label="Username"
+                label="First Name"
                 variant="outlined"
-                value={formData.username}
-                onChange={handleInputChange('username')}
-                error={!!errors.username}
-                helperText={errors.username}
-                InputLabelProps={{
-                  sx: { color: '#171635' },
-                }}
+                value={formData.firstName}
+                onChange={handleInputChange('firstName')}
+                error={!!errors.firstName}
+                helperText={errors.firstName}
+                InputLabelProps={{ sx: { color: '#171635' } }}
+              />
+              <TextField
+                fullWidth
+                label="Last Name"
+                variant="outlined"
+                value={formData.lastName}
+                onChange={handleInputChange('lastName')}
+                error={!!errors.lastName}
+                helperText={errors.lastName}
+                InputLabelProps={{ sx: { color: '#171635' } }}
+              />
+            </Box>
+
+            {/* Email */}
+            <TextField
+              fullWidth
+              label="Email Address"
+              type="email"
+              variant="outlined"
+              value={formData.email}
+              onChange={handleInputChange('email')}
+              error={!!errors.email}
+              helperText={errors.email}
+              InputLabelProps={{ sx: { color: '#171635' } }}
+              InputProps={{
+                startAdornment: <Email sx={{ mr: 1, color: '#4DA1A9' }} />,
+              }}
+            />
+
+            {/* Password Fields */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                fullWidth
+                label="Password"
+                type="password"
+                variant="outlined"
+                value={formData.password}
+                onChange={handleInputChange('password')}
+                error={!!errors.password}
+                helperText={errors.password}
+                InputLabelProps={{ sx: { color: '#171635' } }}
                 InputProps={{
-                  startAdornment: <Person sx={{ mr: 1, color: '#4DA1A9' }} />,
+                  startAdornment: <Lock sx={{ mr: 1, color: '#4DA1A9' }} />,
                 }}
               />
+              <TextField
+                fullWidth
+                label="Confirm Password"
+                type="password"
+                variant="outlined"
+                value={formData.confirmPassword}
+                onChange={handleInputChange('confirmPassword')}
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword}
+                InputLabelProps={{ sx: { color: '#171635' } }}
+                InputProps={{
+                  startAdornment: <Lock sx={{ mr: 1, color: '#4DA1A9' }} />,
+                }}
+              />
+            </Box>
 
-              {/* Password Fields */}
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <Box sx={{ flex: 1, minWidth: '250px' }}>
-                  <TextField
-                    fullWidth
-                    label="Password"
-                    type="password"
-                    variant="outlined"
-                    value={formData.password}
-                    onChange={handleInputChange('password')}
-                    error={!!errors.password}
-                    helperText={errors.password}
-                    InputLabelProps={{
-                      sx: { color: '#171635' },
-                    }}
-                    InputProps={{
-                      startAdornment: <Lock sx={{ mr: 1, color: '#4DA1A9' }} />,
-                    }}
-                  />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: '250px' }}>
-                  <TextField
-                    fullWidth
-                    label="Confirm Password"
-                    type="password"
-                    variant="outlined"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange('confirmPassword')}
-                    error={!!errors.confirmPassword}
-                    helperText={errors.confirmPassword}
-                    InputLabelProps={{
-                      sx: { color: '#171635' },
-                    }}
-                    InputProps={{
-                      startAdornment: <Lock sx={{ mr: 1, color: '#4DA1A9' }} />,
-                    }}
-                  />
-                </Box>
-              </Box>
-
-              {/* Name Fields */}
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <Box sx={{ flex: 1, minWidth: '250px' }}>
-                  <TextField
-                    fullWidth
-                    label="First Name"
-                    variant="outlined"
-                    value={formData.firstName}
-                    onChange={handleInputChange('firstName')}
-                    error={!!errors.firstName}
-                    helperText={errors.firstName}
-                    InputLabelProps={{
-                      sx: { color: '#171635' },
-                    }}
-                  />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: '250px' }}>
-                  <TextField
-                    fullWidth
-                    label="Last Name"
-                    variant="outlined"
-                    value={formData.lastName}
-                    onChange={handleInputChange('lastName')}
-                    error={!!errors.lastName}
-                    helperText={errors.lastName}
-                    InputLabelProps={{
-                      sx: { color: '#171635' },
-                    }}
-                  />
-                </Box>
-              </Box>
-
-              {/* Contact Information */}
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <Box sx={{ flex: 1, minWidth: '250px' }}>
-                  <TextField
-                    fullWidth
-                    label="Email Address"
-                    type="email"
-                    variant="outlined"
-                    value={formData.email}
-                    onChange={handleInputChange('email')}
-                    error={!!errors.email}
-                    helperText={errors.email}
-                    InputLabelProps={{
-                      sx: { color: '#171635' },
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <Email sx={{ mr: 1, color: '#4DA1A9' }} />
-                      ),
-                    }}
-                  />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: '250px' }}>
-                  <TextField
-                    fullWidth
-                    label="Phone Number"
-                    type="tel"
-                    variant="outlined"
-                    value={formData.phoneNumber}
-                    onChange={handleInputChange('phoneNumber')}
-                    error={!!errors.phoneNumber}
-                    helperText={errors.phoneNumber}
-                    InputLabelProps={{
-                      sx: { color: '#171635' },
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <Phone sx={{ mr: 1, color: '#4DA1A9' }} />
-                      ),
-                    }}
-                  />
-                </Box>
-              </Box>
-
-              {/* Checkboxes */}
-              <Divider sx={{ my: 2 }} />
-
+            {/* Terms */}
+            <Box sx={{ mt: 1 }}>
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={formData.subscribeNewsletter}
-                    onChange={handleCheckboxChange('subscribeNewsletter')}
+                    checked={formData.acceptTerms}
+                    onChange={handleCheckboxChange('acceptTerms')}
                     sx={{
-                      '&.Mui-checked': {
-                        color: 'primary.main',
-                      },
+                      '&.Mui-checked': { color: '#FFA630' },
                     }}
                   />
                 }
                 label={
-                  <Typography variant="body2">
-                    Subscribe to our newsletter for updates and exclusive offers
+                  <Typography variant="body2" sx={{ color: '#666' }}>
+                    By creating an account, you agree to our{' '}
+                    <Link
+                      href="#"
+                      sx={{ color: '#4DA1A9', textDecoration: 'none' }}
+                    >
+                      Terms of Service
+                    </Link>{' '}
+                    and{' '}
+                    <Link
+                      href="#"
+                      sx={{ color: '#4DA1A9', textDecoration: 'none' }}
+                    >
+                      Privacy Policy
+                    </Link>
                   </Typography>
                 }
               />
-
-              <Box>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={formData.acceptTerms}
-                      onChange={handleCheckboxChange('acceptTerms')}
-                      sx={{
-                        '&.Mui-checked': {
-                          color: 'primary.main',
-                        },
-                      }}
-                    />
-                  }
-                  label={
-                    <Typography variant="body2">
-                      I agree to the{' '}
-                      <Link
-                        href="#"
-                        sx={{ color: 'primary.main', textDecoration: 'none' }}
-                      >
-                        Terms and Conditions
-                      </Link>{' '}
-                      and{' '}
-                      <Link
-                        href="#"
-                        sx={{ color: 'primary.main', textDecoration: 'none' }}
-                      >
-                        Privacy Policy
-                      </Link>
-                    </Typography>
-                  }
-                />
-                {errors.acceptTerms && (
-                  <Typography
-                    variant="caption"
-                    color="error"
-                    sx={{ display: 'block', mt: 1 }}
-                  >
-                    {errors.acceptTerms}
-                  </Typography>
-                )}
-              </Box>
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                size="large"
-                sx={{
-                  mt: 3,
-                  py: 2,
-                  background: 'linear-gradient(90deg, #9C89B8, #4DA1A9)',
-                  fontWeight: 600,
-                  fontSize: '1.1rem',
-                  '&:hover': {
-                    background: 'linear-gradient(90deg, #856DA9, #41898F)',
-                  },
-                }}
-              >
-                Register Me Now!
-              </Button>
-
-              {/* Login Link */}
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Already have an account?{' '}
-                  <Link
-                    href="/login"
-                    sx={{ color: 'primary.main', textDecoration: 'none' }}
-                  >
-                    Sign in here
-                  </Link>
+              {errors.acceptTerms && (
+                <Typography
+                  variant="caption"
+                  color="error"
+                  sx={{ display: 'block', mt: 1 }}
+                >
+                  {errors.acceptTerms}
                 </Typography>
-              </Box>
+              )}
+            </Box>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              sx={{
+                mt: 2,
+                py: 1.5,
+                background: 'linear-gradient(90deg, #9C89B8, #4DA1A9)',
+                fontWeight: 600,
+                fontSize: '1rem',
+                textTransform: 'none',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #856DA9, #41898F)',
+                },
+              }}
+            >
+              Create Account →
+            </Button>
+
+            {/* Login Link */}
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                Already have an account?{' '}
+                <Link
+                  href="/login"
+                  sx={{
+                    color: '#4DA1A9',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                  }}
+                >
+                  Sign in here
+                </Link>
+              </Typography>
             </Box>
           </Box>
         </Paper>
-      </Container>
+      </Box>
     </Box>
   );
 }
