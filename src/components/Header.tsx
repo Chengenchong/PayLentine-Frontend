@@ -9,8 +9,15 @@ import {
   Container,
 } from '@mui/material';
 import { AccountBalanceWallet, TrendingUp } from '@mui/icons-material';
+import { useRouter } from 'next/navigation';
 
 export default function Header() {
+  const router = useRouter();
+
+  const handleGetStarted = () => {
+    router.push('/register');
+  };
+
   return (
     <AppBar
       position="fixed"
@@ -80,6 +87,7 @@ export default function Header() {
             <Button
               variant="contained"
               startIcon={<TrendingUp />}
+              onClick={handleGetStarted}
               sx={{
                 backgroundColor: '#171635',
                 color: '#F8F6F6',
