@@ -501,7 +501,7 @@ export default function TransactionsPage() {
                   <Button startIcon={<RequestQuote />} size="small" sx={{ color: COLORS.btnIcon2, borderColor: COLORS.btnIcon2, borderRadius: 2, fontWeight: 500, textTransform: 'none', border: '1px solid', px: 2, py: 0.5, minWidth: 0 }}>
                     Request
                   </Button>
-                  <Button startIcon={<AddCircle />} size="small" sx={{ color: COLORS.fontSub, borderColor: COLORS.fontSub, borderRadius: 2, fontWeight: 500, textTransform: 'none', border: '1px solid', px: 2, py: 0.5, minWidth: 0 }}>
+                  <Button startIcon={<AddCircle />} size="small" sx={{ color: COLORS.fontSub, borderColor: COLORS.fontSub, borderRadius: 2, fontWeight: 500, textTransform: 'none', border: '1px solid', px: 2, py: 0.5, minWidth: 0 }} onClick={() => router.push('/topup')}>
                     Top Up
                   </Button>
                 </Box>
