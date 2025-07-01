@@ -13,9 +13,11 @@ import {
   Link,
 } from '@mui/material';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PersonAdd, Email, Phone, Lock, Person } from '@mui/icons-material';
 
 export default function RegisterContent() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     username: '',
     firstName: '',
@@ -104,7 +106,8 @@ export default function RegisterContent() {
     if (validateForm()) {
       console.log('Form submitted:', formData);
       // Here you would typically send the data to your backend
-      alert('Registration successful! Welcome to PayLentine!');
+      // Redirect to pre-dashboard animation
+      router.push('/pre-dashboard');
     }
   };
 
@@ -228,8 +231,8 @@ export default function RegisterContent() {
           elevation={0}
           sx={{
             p: 3,
-            maxWidth: 850,
-            width: 690,
+            maxWidth: 650,
+            width: 650,
             height: 'fit-content',
             background: '#F8F6F6',
             boxShadow: 'none',
