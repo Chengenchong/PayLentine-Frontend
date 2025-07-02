@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Typography, Paper, Button } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useRouter } from 'next/navigation';
 
@@ -25,9 +25,14 @@ const Content = () => {
   return (
     <Box sx={{ minHeight: '100vh', background: 'linear-gradient(120deg, #f7f7fa 0%, #e9e6ff 100%)', py: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Paper sx={{ width: 700, maxWidth: '98vw', p: 4, borderRadius: 4, boxShadow: '0 8px 32px #a78bfa22' }}>
-        <Typography variant="h4" fontWeight={900} color="#7c3aed" mb={2} textAlign="center">
-          Transaction History
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h4" fontWeight={900} color="#7c3aed">
+            Transaction History
+          </Typography>
+          <Button variant="outlined" color="primary" size="small" sx={{ fontWeight: 700, borderRadius: 2 }} onClick={() => router.push('/transactions')}>
+            Back to Transactions
+          </Button>
+        </Box>
         <Box sx={{ height: 400, width: '100%' }}>
           <DataGrid
             rows={rows}
