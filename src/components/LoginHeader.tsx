@@ -11,8 +11,14 @@ import {
   Avatar,
 } from '@mui/material';
 import { Person } from '@mui/icons-material';
+import { useRouter } from 'next/navigation';
 
 export default function LoginHeader() {
+  const router = useRouter();
+
+  const handleLogoClick = () => {
+    router.push('/duplicateddashboard');
+  };
   return (
     <AppBar
       position="fixed"
@@ -25,7 +31,19 @@ export default function LoginHeader() {
     >
       <Container maxWidth="lg">
         <Toolbar sx={{ justifyContent: 'space-between', minHeight: '80px' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              cursor: 'pointer',
+              '&:hover': {
+                opacity: 0.8,
+              },
+              transition: 'opacity 0.2s ease',
+            }}
+            onClick={handleLogoClick}
+          >
             <img
               src="/Paylentine_logo.jpg"
               alt="PayLentine Logo"

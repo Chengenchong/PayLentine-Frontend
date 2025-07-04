@@ -93,10 +93,19 @@ const COLORS = {
 
 const sidebarItems = [
   { icon: <Home />, label: 'Home' },
-  { icon: <List sx={{ fontSize: 22 }} />, label: 'Transactions', active: true },
+  {
+    icon: <List sx={{ fontSize: 22 }} />,
+    label: 'Transactions',
+    active: true,
+    hasDropdown: true,
+  },
   { icon: <Payment />, label: 'Payments', hasDropdown: true },
   { icon: <Group />, label: 'Recipients' },
   { icon: <BarChart />, label: 'Insights' },
+];
+
+const transactionSubItems = [
+  { icon: <ListAlt />, label: 'Transaction History' },
 ];
 
 const paymentSubItems = [
@@ -289,6 +298,7 @@ function getConvertedAmount(
 
 export default function DuplicatedDashboardPage() {
   const [paymentsOpen, setPaymentsOpen] = useState(false);
+  const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState(currencyBalances[0]);
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [payForm, setPayForm] = useState({
@@ -380,7 +390,13 @@ export default function DuplicatedDashboardPage() {
                 component="button"
                 onClick={
                   item.hasDropdown
-                    ? () => setPaymentsOpen((open) => !open)
+                    ? () => {
+                        if (item.label === 'Transactions') {
+                          setTransactionsOpen((open) => !open);
+                        } else if (item.label === 'Payments') {
+                          setPaymentsOpen((open) => !open);
+                        }
+                      }
                     : undefined
                 }
                 sx={{
@@ -424,48 +440,97 @@ export default function DuplicatedDashboardPage() {
                       color: '#B0B0B0',
                       fontSize: 14,
                       ml: -0.5,
-                      transform: paymentsOpen ? 'rotate(180deg)' : 'none',
+                      transform:
+                        (item.label === 'Transactions' && transactionsOpen) ||
+                        (item.label === 'Payments' && paymentsOpen)
+                          ? 'rotate(180deg)'
+                          : 'none',
                       transition: 'transform 0.2s',
                     }}
                   />
                 )}
               </ListItem>
-              {item.hasDropdown && paymentsOpen && (
-                <List disablePadding>
-                  {paymentSubItems.map((sub, subIdx) => (
-                    <ListItem
-                      key={sub.label}
-                      component="button"
-                      sx={{
-                        pl: 3.5,
-                        pr: 1.5,
-                        py: 0.25,
-                        mb: 1.5,
-                        minHeight: 26,
-                        color: '#6B6B6B',
-                        fontWeight: 500,
-                        fontSize: 11,
-                        borderRadius: 2,
-                        background: 'transparent',
-                        '&:hover': {
-                          background: '#F3F5F2',
-                          color: COLORS.fontMain,
-                        },
-                      }}
-                    >
-                      <ListItemIcon
-                        sx={{ minWidth: 20, color: '#B0B0B0', fontSize: 13 }}
+              {item.hasDropdown &&
+                item.label === 'Transactions' &&
+                transactionsOpen && (
+                  <List disablePadding>
+                    {transactionSubItems.map((sub, subIdx) => (
+                      <ListItem
+                        key={sub.label}
+                        component="button"
+                        onClick={() => {
+                          if (sub.label === 'Transaction History') {
+                            window.location.href = '/transaction-history';
+                          }
+                        }}
+                        sx={{
+                          pl: 3.5,
+                          pr: 1.5,
+                          py: 0.25,
+                          mb: 1.5,
+                          minHeight: 26,
+                          color: '#6B6B6B',
+                          fontWeight: 500,
+                          fontSize: 11,
+                          borderRadius: 2,
+                          background: 'transparent',
+                          '&:hover': {
+                            background: '#F3F5F2',
+                            color: COLORS.fontMain,
+                          },
+                        }}
                       >
-                        {React.cloneElement(sub.icon, { fontSize: 'small' })}
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={sub.label}
-                        primaryTypographyProps={{ fontSize: 11 }}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              )}
+                        <ListItemIcon
+                          sx={{ minWidth: 20, color: '#B0B0B0', fontSize: 13 }}
+                        >
+                          {React.cloneElement(sub.icon, { fontSize: 'small' })}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={sub.label}
+                          primaryTypographyProps={{ fontSize: 11 }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+              {item.hasDropdown &&
+                item.label === 'Payments' &&
+                paymentsOpen && (
+                  <List disablePadding>
+                    {paymentSubItems.map((sub, subIdx) => (
+                      <ListItem
+                        key={sub.label}
+                        component="button"
+                        sx={{
+                          pl: 3.5,
+                          pr: 1.5,
+                          py: 0.25,
+                          mb: 1.5,
+                          minHeight: 26,
+                          color: '#6B6B6B',
+                          fontWeight: 500,
+                          fontSize: 11,
+                          borderRadius: 2,
+                          background: 'transparent',
+                          '&:hover': {
+                            background: '#F3F5F2',
+                            color: COLORS.fontMain,
+                          },
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{ minWidth: 20, color: '#B0B0B0', fontSize: 13 }}
+                        >
+                          {React.cloneElement(sub.icon, { fontSize: 'small' })}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={sub.label}
+                          primaryTypographyProps={{ fontSize: 11 }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
             </React.Fragment>
           ))}
         </List>

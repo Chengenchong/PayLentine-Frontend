@@ -29,6 +29,10 @@ export default function Header() {
     setSignInOpen(false);
   };
 
+  const handleLogoClick = () => {
+    router.push('/');
+  };
+
   return (
     <>
       <AppBar
@@ -42,11 +46,28 @@ export default function Header() {
       >
         <Container maxWidth="lg">
           <Toolbar sx={{ justifyContent: 'space-between', minHeight: '80px' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.8,
+                },
+                transition: 'opacity 0.2s ease',
+              }}
+              onClick={handleLogoClick}
+            >
               <img
                 src="/Paylentine_logo.jpg"
                 alt="PayLentine Logo"
-                style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6 }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  objectFit: 'contain',
+                  borderRadius: 6,
+                }}
               />
               <Typography
                 variant="h5"

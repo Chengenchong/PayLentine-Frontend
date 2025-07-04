@@ -9,14 +9,66 @@ import {
   MenuItem,
   IconButton,
   Pagination,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   Search,
   FilterList,
   Download,
   AccountBalanceWallet,
+  Home,
+  Payment,
+  Group,
+  BarChart,
+  ExpandMore,
+  Logout,
+  ListAlt,
+  Schedule,
+  Autorenew,
+  Repeat,
+  RequestQuote,
+  CallSplit,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
+
+// Color palette
+const COLORS = {
+  bg: '#F8F6F6',
+  fontMain: '#171635',
+  btnIconMain: '#9C89B8',
+  fontSub: '#FFA630',
+  btnIcon2: '#4DA1A9',
+  btnHoverMain: '#856DA9',
+  btnHover2: '#41898F',
+};
+
+const sidebarItems = [
+  { icon: <Home />, label: 'Home' },
+  {
+    icon: <List sx={{ fontSize: 22 }} />,
+    label: 'Transactions',
+    active: true,
+    hasDropdown: true,
+  },
+  { icon: <Payment />, label: 'Payments', hasDropdown: true },
+  { icon: <Group />, label: 'Recipients' },
+  { icon: <BarChart />, label: 'Insights' },
+];
+
+const transactionSubItems = [
+  { icon: <ListAlt />, label: 'Transaction History' },
+];
+
+const paymentSubItems = [
+  { icon: <Schedule />, label: 'Scheduled' },
+  { icon: <Autorenew />, label: 'Direct Debits' },
+  { icon: <Repeat />, label: 'Recurring card payments' },
+  { icon: <RequestQuote />, label: 'Payment requests' },
+  { icon: <CallSplit />, label: 'Bill splits' },
+];
 
 // Simulate more transaction data for pagination (40+ rows)
 const baseUsers = [
@@ -83,6 +135,8 @@ const Content = () => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [paymentsOpen, setPaymentsOpen] = useState(false);
+  const [transactionsOpen, setTransactionsOpen] = useState(false);
 
   // Filtered transactions
   const filtered = useMemo(() => {
@@ -111,80 +165,258 @@ const Content = () => {
 
   const handlePageChange = (_: any, value: number) => setPage(value);
 
+  const handleLogout = () => {
+    router.push('/');
+  };
+
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(120deg, #f7f7fa 0%, #e9e6ff 100%)',
-        py: 6,
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-      }}
-    >
-      <Paper
+    <Box sx={{ display: 'flex', minHeight: '100vh', background: COLORS.bg }}>
+      {/* Sidebar */}
+      <Box
         sx={{
-          width: 2000,
-          maxWidth: '98vw',
+          width: 160,
+          background: '#fff',
+          m: 0,
           p: 0,
-          borderRadius: 6,
-          boxShadow: '0 8px 32px #a78bfa22',
-          overflow: 'hidden',
-          background: 'rgba(255,255,255,0.98)',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: 'none',
+          borderRadius: 0,
+          borderRight: '1px solid #F0F0F0',
+          minHeight: '100vh',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          zIndex: 1000,
         }}
       >
-        {/* Top Bar */}
-        <Box
+        <List sx={{ px: 0, pt: 0, mt: '80px' }}>
+          {sidebarItems.map((item, idx) => (
+            <React.Fragment key={item.label}>
+              <ListItem
+                component="button"
+                onClick={
+                  item.hasDropdown
+                    ? () => {
+                        if (item.label === 'Transactions') {
+                          setTransactionsOpen((open) => !open);
+                        } else if (item.label === 'Payments') {
+                          setPaymentsOpen((open) => !open);
+                        }
+                      }
+                    : undefined
+                }
+                sx={{
+                  borderRadius: item.active ? 2 : 0,
+                  background: item.active ? '#F3F5F2' : 'transparent',
+                  mb: 2,
+                  p: 0,
+                  color: item.active ? COLORS.fontMain : '#6B6B6B',
+                  fontWeight: item.active ? 700 : 500,
+                  minHeight: 32,
+                  px: 1.5,
+                  justifyContent: 'flex-start',
+                  alignItems: 'center',
+                  transition: 'background 0.2s',
+                  '&:hover': {
+                    background: '#F3F5F2',
+                    color: COLORS.fontMain,
+                  },
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 24,
+                    color: item.active ? COLORS.fontMain : '#B0B0B0',
+                    fontSize: 16,
+                  }}
+                >
+                  {React.cloneElement(item.icon, { fontSize: 'small' })}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.label}
+                  primaryTypographyProps={{
+                    fontWeight: item.active ? 700 : 500,
+                    color: item.active ? COLORS.fontMain : '#6B6B6B',
+                    fontSize: 12,
+                  }}
+                />
+                {item.hasDropdown && (
+                  <ExpandMore
+                    sx={{
+                      color: '#B0B0B0',
+                      fontSize: 14,
+                      ml: -0.5,
+                      transform:
+                        (item.label === 'Transactions' && transactionsOpen) ||
+                        (item.label === 'Payments' && paymentsOpen)
+                          ? 'rotate(180deg)'
+                          : 'none',
+                      transition: 'transform 0.2s',
+                    }}
+                  />
+                )}
+              </ListItem>
+              {item.hasDropdown &&
+                item.label === 'Transactions' &&
+                transactionsOpen && (
+                  <List disablePadding>
+                    {transactionSubItems.map((sub, subIdx) => (
+                      <ListItem
+                        key={sub.label}
+                        component="button"
+                        onClick={() => {
+                          if (sub.label === 'Transaction History') {
+                            // Already on transaction history page
+                          }
+                        }}
+                        sx={{
+                          pl: 3.5,
+                          pr: 1.5,
+                          py: 0.25,
+                          mb: 1.5,
+                          minHeight: 26,
+                          color: '#6B6B6B',
+                          fontWeight: 500,
+                          fontSize: 11,
+                          borderRadius: 2,
+                          background: '#F3F5F2',
+                          '&:hover': {
+                            background: '#F3F5F2',
+                            color: COLORS.fontMain,
+                          },
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{ minWidth: 20, color: '#B0B0B0', fontSize: 13 }}
+                        >
+                          {React.cloneElement(sub.icon, { fontSize: 'small' })}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={sub.label}
+                          primaryTypographyProps={{ fontSize: 11 }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+              {item.hasDropdown &&
+                item.label === 'Payments' &&
+                paymentsOpen && (
+                  <List disablePadding>
+                    {paymentSubItems.map((sub, subIdx) => (
+                      <ListItem
+                        key={sub.label}
+                        component="button"
+                        sx={{
+                          pl: 3.5,
+                          pr: 1.5,
+                          py: 0.25,
+                          mb: 1.5,
+                          minHeight: 26,
+                          color: '#6B6B6B',
+                          fontWeight: 500,
+                          fontSize: 11,
+                          borderRadius: 2,
+                          background: 'transparent',
+                          '&:hover': {
+                            background: '#F3F5F2',
+                            color: COLORS.fontMain,
+                          },
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{ minWidth: 20, color: '#B0B0B0', fontSize: 13 }}
+                        >
+                          {React.cloneElement(sub.icon, { fontSize: 'small' })}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={sub.label}
+                          primaryTypographyProps={{ fontSize: 11 }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+            </React.Fragment>
+          ))}
+        </List>
+        <Box flexGrow={1} />
+        <Button
+          startIcon={<Logout fontSize="small" />}
+          onClick={handleLogout}
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            p: 3,
-            borderBottom: '1px solid #ede9fe',
-            background: '#fff',
-            position: 'sticky',
-            top: 0,
-            zIndex: 2,
+            m: 2,
+            mb: 3,
+            color: '#B0B0B0',
+            fontWeight: 600,
+            fontSize: 13,
+            justifyContent: 'flex-start',
+            textTransform: 'none',
+            borderRadius: 2,
+            px: 2,
+            py: 1,
+            '&:hover': {
+              background: '#F3F5F2',
+              color: COLORS.fontMain,
+            },
           }}
+          fullWidth
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <AccountBalanceWallet sx={{ color: '#7c3aed', fontSize: 36 }} />
-            <Typography
-              variant="h4"
-              fontWeight={900}
-              color="#7c3aed"
-              sx={{ letterSpacing: 1 }}
-            >
-              Transactions
-            </Typography>
-          </Box>
+          Logout
+        </Button>
+      </Box>
+
+      {/* Main Content */}
+      <Box
+        sx={{
+          flex: 1,
+          p: 4,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3,
+          ml: '160px',
+          mt: '80px',
+        }}
+      >
+        {/* Page Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 2 }}>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 700, color: COLORS.fontMain }}
+          >
+            Transaction History
+          </Typography>
           <Button
             variant="outlined"
-            color="primary"
-            size="medium"
-            sx={{ fontWeight: 700, borderRadius: 2, px: 3, fontSize: 18 }}
             onClick={() => router.push('/duplicateddashboard')}
+            sx={{
+              ml: 'auto',
+              color: COLORS.btnIconMain,
+              borderColor: COLORS.btnIconMain,
+              fontWeight: 600,
+              '&:hover': {
+                backgroundColor: COLORS.btnIconMain,
+                borderColor: COLORS.btnIconMain,
+                color: '#fff',
+              },
+            }}
           >
             Back
           </Button>
         </Box>
-        {/* Search, Filter, Download */}
+
+        {/* Search and Filter Controls */}
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 2,
-            px: 3,
-            py: 2,
-            background: '#fff',
-            borderBottom: '1px solid #ede9fe',
-            position: 'sticky',
-            top: 80,
-            zIndex: 1,
+            mb: 2,
           }}
         >
           <TextField
-            size="medium"
+            size="small"
             placeholder="Search by user, type, or ID"
             value={search}
             onChange={(e) => {
@@ -194,16 +426,21 @@ const Content = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search sx={{ fontSize: 22, color: '#b5a7e6' }} />
+                  <Search sx={{ fontSize: 16 }} />
                 </InputAdornment>
               ),
-              sx: { borderRadius: 2, background: '#f7f7fa', fontSize: 18 },
+              sx: {
+                fontSize: 12,
+                borderRadius: 2,
+                background: '#fff',
+                height: 36,
+              },
             }}
-            sx={{ flex: 1, minWidth: 0 }}
+            sx={{ flex: 1, maxWidth: 400 }}
           />
           <TextField
             select
-            size="medium"
+            size="small"
             value={typeFilter}
             onChange={(e) => {
               setTypeFilter(e.target.value);
@@ -212,10 +449,15 @@ const Content = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <FilterList sx={{ fontSize: 22, color: '#b5a7e6' }} />
+                  <FilterList sx={{ fontSize: 16 }} />
                 </InputAdornment>
               ),
-              sx: { borderRadius: 2, background: '#f7f7fa', fontSize: 18 },
+              sx: {
+                fontSize: 12,
+                borderRadius: 2,
+                background: '#fff',
+                height: 36,
+              },
             }}
             sx={{ width: 200 }}
           >
@@ -227,148 +469,105 @@ const Content = () => {
           </TextField>
           <IconButton
             onClick={handleDownload}
-            sx={{ color: '#7c3aed', borderRadius: 2, fontSize: 22 }}
+            sx={{
+              color: COLORS.btnIconMain,
+              '&:hover': { backgroundColor: COLORS.bg },
+            }}
           >
-            <Download fontSize="inherit" />
+            <Download />
           </IconButton>
         </Box>
-        {/* Table Header */}
-        <Box
+
+        {/* Transaction Table */}
+        <Paper
           sx={{
-            display: 'grid',
-            gridTemplateColumns: gridTemplate,
-            px: 3,
-            py: 2,
-            background: '#ede9fe',
-            borderBottom: '2px solid #7c3aed',
-            fontWeight: 900,
-            color: '#7c3aed',
-            fontSize: 20,
-            position: 'sticky',
-            top: 144,
-            zIndex: 1,
-            letterSpacing: 0.5,
-            borderTopLeftRadius: 8,
-            borderTopRightRadius: 8,
-          }}
-        >
-          <Box sx={{ textAlign: 'center' }}>No.</Box>
-          <Box sx={{ textAlign: 'center' }}>ID</Box>
-          <Box sx={{ textAlign: 'center' }}>Transfer Type</Box>
-          <Box sx={{ textAlign: 'center' }}>User</Box>
-          <Box sx={{ textAlign: 'center' }}>Amount</Box>
-          <Box sx={{ textAlign: 'center' }}>Date</Box>
-        </Box>
-        {/* Transaction List */}
-        <Box
-          sx={{
-            background: 'transparent',
-            minHeight: 400,
-            maxHeight: 600,
-            overflowY: 'auto',
-            p: 0,
-          }}
-        >
-          {paginated.length === 0 ? (
-            <Typography sx={{ p: 4, textAlign: 'center', color: '#b5a7e6' }}>
-              No transactions found.
-            </Typography>
-          ) : (
-            paginated.map((tx, idx) => (
-              <Box
-                key={tx.id}
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: gridTemplate,
-                  alignItems: 'center',
-                  px: 3,
-                  py: 2.5,
-                  background: idx % 2 === 0 ? '#f7f7fa' : '#fff',
-                  borderBottom:
-                    idx === paginated.length - 1 ? 'none' : '1px solid #e0e7ff',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    background: '#e9e6ff',
-                    boxShadow: '0 2px 12px #a78bfa22',
-                  },
-                  fontSize: 18,
-                }}
-              >
-                <Box
-                  sx={{
-                    textAlign: 'center',
-                    fontWeight: 700,
-                    color: '#7c3aed',
-                  }}
-                >
-                  {(page - 1) * ROWS_PER_PAGE + idx + 1}
-                </Box>
-                <Box
-                  sx={{
-                    textAlign: 'center',
-                    fontWeight: 500,
-                    letterSpacing: 1,
-                  }}
-                >
-                  {tx.id}
-                </Box>
-                <Box sx={{ textAlign: 'center', fontWeight: 500 }}>
-                  {tx.type}
-                </Box>
-                <Box
-                  sx={{
-                    textAlign: 'center',
-                    fontWeight: 700,
-                    color: '#171635',
-                  }}
-                >
-                  {tx.user}
-                </Box>
-                <Box
-                  sx={{
-                    textAlign: 'center',
-                    fontWeight: 900,
-                    color: tx.positive ? '#4DA1A9' : '#FFA630',
-                    fontSize: 20,
-                  }}
-                >
-                  {tx.amount}
-                </Box>
-                <Box
-                  sx={{
-                    textAlign: 'center',
-                    color: '#b5a7e6',
-                    fontWeight: 600,
-                  }}
-                >
-                  {tx.date}
-                </Box>
-              </Box>
-            ))
-          )}
-        </Box>
-        {/* Pagination */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            px: 3,
-            py: 2,
+            borderRadius: 3,
+            px: 2,
+            py: 1.5,
             background: '#fff',
-            borderTop: '1px solid #ede9fe',
+            boxShadow: 1,
           }}
         >
-          <Pagination
-            count={pageCount}
-            page={page}
-            onChange={handlePageChange}
-            color="primary"
-            size="large"
-          />
-        </Box>
-      </Paper>
+          {/* Table Header */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: gridTemplate,
+              py: 2,
+              borderBottom: '1px solid #F0F0F0',
+              fontWeight: 600,
+              color: COLORS.fontMain,
+              fontSize: 12,
+            }}
+          >
+            <Box sx={{ textAlign: 'center' }}>N°</Box>
+            <Box sx={{ textAlign: 'center' }}>ID</Box>
+            <Box sx={{ textAlign: 'center' }}>Transfer Type</Box>
+            <Box sx={{ textAlign: 'center' }}>User</Box>
+            <Box sx={{ textAlign: 'center' }}>Amount</Box>
+            <Box sx={{ textAlign: 'center' }}>Date</Box>
+          </Box>
+
+          {/* Transaction List */}
+          <Box sx={{ minHeight: 400 }}>
+            {paginated.length === 0 ? (
+              <Typography sx={{ p: 4, textAlign: 'center', color: '#B0B0B0' }}>
+                No transactions found.
+              </Typography>
+            ) : (
+              paginated.map((tx, idx) => (
+                <Box
+                  key={tx.id}
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: gridTemplate,
+                    alignItems: 'center',
+                    py: 1.5,
+                    borderBottom:
+                      idx === paginated.length - 1
+                        ? 'none'
+                        : '1px solid #F0F0F0',
+                    cursor: 'pointer',
+                    '&:hover': { background: '#f3eaff' },
+                    fontSize: 11,
+                  }}
+                >
+                  <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
+                    {(page - 1) * ROWS_PER_PAGE + idx + 1}
+                  </Box>
+                  <Box sx={{ textAlign: 'center' }}>{tx.id}</Box>
+                  <Box sx={{ textAlign: 'center' }}>{tx.type}</Box>
+                  <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
+                    {tx.user}
+                  </Box>
+                  <Box
+                    sx={{
+                      textAlign: 'center',
+                      fontWeight: 600,
+                      color: tx.positive ? COLORS.btnIcon2 : COLORS.fontSub,
+                    }}
+                  >
+                    {tx.amount}
+                  </Box>
+                  <Box sx={{ textAlign: 'center', color: '#B0B0B0' }}>
+                    {tx.date}
+                  </Box>
+                </Box>
+              ))
+            )}
+          </Box>
+
+          {/* Pagination */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+            <Pagination
+              count={pageCount}
+              page={page}
+              onChange={handlePageChange}
+              size="small"
+            />
+          </Box>
+        </Paper>
+      </Box>
     </Box>
   );
 };
