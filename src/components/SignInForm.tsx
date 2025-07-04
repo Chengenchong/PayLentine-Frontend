@@ -44,20 +44,21 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
   const [loginError, setLoginError] = useState('');
   const router = useRouter();
 
-  const handleInputChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.value,
-    }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
+  const handleInputChange =
+    (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: event.target.value,
       }));
-    }
-    setLoginError('');
-  };
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+      setLoginError('');
+    };
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -80,7 +81,7 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -90,23 +91,22 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
 
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       // Here you would typically make an API call to your backend
       // const response = await fetch('/api/auth/signin', {
       //   method: 'POST',
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify(formData),
       // });
-      
+
       // For now, just simulate success
       console.log('Sign in attempt:', formData);
-      
+
       // Close the form on success
       onClose();
-      // Redirect to transactions page
-      router.push('/transactions');
-      
+      // Redirect to LoginDashboard page
+      router.push('/duplicateddashboard');
     } catch (error) {
       setLoginError('Invalid email or password. Please try again.');
     } finally {
@@ -134,9 +134,17 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
       }}
     >
       <DialogTitle sx={{ pb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AccountBalanceWallet sx={{ color: 'primary.main', fontSize: 28 }} />
+            <AccountBalanceWallet
+              sx={{ color: 'primary.main', fontSize: 28 }}
+            />
             <Typography variant="h5" sx={{ fontWeight: 700 }}>
               Welcome Back
             </Typography>
@@ -220,8 +228,18 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
             }}
           />
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-            <Typography variant="body2" sx={{ color: 'primary.main', cursor: 'pointer' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mt: 2,
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{ color: 'primary.main', cursor: 'pointer' }}
+            >
               Forgot password?
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -229,7 +247,11 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
               <Typography
                 component="span"
                 variant="body2"
-                sx={{ color: 'primary.main', cursor: 'pointer', fontWeight: 600 }}
+                sx={{
+                  color: 'primary.main',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
               >
                 Sign up
               </Typography>
@@ -312,4 +334,4 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
       </DialogContent>
     </Dialog>
   );
-} 
+}
