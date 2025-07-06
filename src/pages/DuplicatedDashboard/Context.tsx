@@ -37,6 +37,7 @@ import {
   FormControlLabel,
   FormControl,
   FormLabel,
+  Autocomplete,
 } from '@mui/material';
 import {
   AccountBalanceWallet,
@@ -92,15 +93,14 @@ const COLORS = {
 };
 
 const sidebarItems = [
-  { icon: <Home />, label: 'Home' },
   {
-    icon: <List sx={{ fontSize: 22 }} />,
+    icon: <Home />,
     label: 'Transactions',
     active: true,
     hasDropdown: true,
   },
   { icon: <Payment />, label: 'Payments', hasDropdown: true },
-  { icon: <Group />, label: 'Recipients' },
+  { icon: <Group />, label: 'Contacts' },
   { icon: <BarChart />, label: 'Insights' },
 ];
 
@@ -218,6 +218,124 @@ const recipientCountries = [
   { code: 'MY', name: 'Malaysia', currency: 'MYR' },
   { code: 'US', name: 'United States', currency: 'USD' },
   { code: 'CN', name: 'China', currency: 'CNY' },
+  { code: 'GB', name: 'United Kingdom', currency: 'GBP' },
+  { code: 'EU', name: 'Eurozone', currency: 'EUR' },
+  { code: 'JP', name: 'Japan', currency: 'JPY' },
+  { code: 'CA', name: 'Canada', currency: 'CAD' },
+  { code: 'AU', name: 'Australia', currency: 'AUD' },
+  { code: 'SG', name: 'Singapore', currency: 'SGD' },
+  { code: 'IN', name: 'India', currency: 'INR' },
+  { code: 'KR', name: 'South Korea', currency: 'KRW' },
+  { code: 'HK', name: 'Hong Kong', currency: 'HKD' },
+  { code: 'NZ', name: 'New Zealand', currency: 'NZD' },
+  { code: 'CH', name: 'Switzerland', currency: 'CHF' },
+  { code: 'SE', name: 'Sweden', currency: 'SEK' },
+  { code: 'NO', name: 'Norway', currency: 'NOK' },
+  { code: 'DK', name: 'Denmark', currency: 'DKK' },
+  { code: 'TH', name: 'Thailand', currency: 'THB' },
+  { code: 'ID', name: 'Indonesia', currency: 'IDR' },
+  { code: 'PH', name: 'Philippines', currency: 'PHP' },
+  { code: 'SA', name: 'Saudi Arabia', currency: 'SAR' },
+  { code: 'AE', name: 'United Arab Emirates', currency: 'AED' },
+  { code: 'ZA', name: 'South Africa', currency: 'ZAR' },
+  { code: 'BR', name: 'Brazil', currency: 'BRL' },
+  { code: 'MX', name: 'Mexico', currency: 'MXN' },
+  { code: 'TR', name: 'Turkey', currency: 'TRY' },
+  { code: 'RU', name: 'Russia', currency: 'RUB' },
+  { code: 'NG', name: 'Nigeria', currency: 'NGN' },
+  { code: 'EG', name: 'Egypt', currency: 'EGP' },
+  { code: 'PK', name: 'Pakistan', currency: 'PKR' },
+  { code: 'BD', name: 'Bangladesh', currency: 'BDT' },
+  { code: 'VN', name: 'Vietnam', currency: 'VND' },
+  { code: 'AR', name: 'Argentina', currency: 'ARS' },
+  { code: 'CO', name: 'Colombia', currency: 'COP' },
+  { code: 'CL', name: 'Chile', currency: 'CLP' },
+  { code: 'PE', name: 'Peru', currency: 'PEN' },
+  { code: 'PL', name: 'Poland', currency: 'PLN' },
+  { code: 'CZ', name: 'Czech Republic', currency: 'CZK' },
+  { code: 'HU', name: 'Hungary', currency: 'HUF' },
+  { code: 'IL', name: 'Israel', currency: 'ILS' },
+  { code: 'QA', name: 'Qatar', currency: 'QAR' },
+  { code: 'KW', name: 'Kuwait', currency: 'KWD' },
+  { code: 'OM', name: 'Oman', currency: 'OMR' },
+  { code: 'BH', name: 'Bahrain', currency: 'BHD' },
+  { code: 'UA', name: 'Ukraine', currency: 'UAH' },
+  { code: 'RO', name: 'Romania', currency: 'RON' },
+  { code: 'BG', name: 'Bulgaria', currency: 'BGN' },
+  { code: 'HR', name: 'Croatia', currency: 'HRK' },
+  { code: 'KE', name: 'Kenya', currency: 'KES' },
+  { code: 'GH', name: 'Ghana', currency: 'GHS' },
+  { code: 'TZ', name: 'Tanzania', currency: 'TZS' },
+  { code: 'UG', name: 'Uganda', currency: 'UGX' },
+  { code: 'MA', name: 'Morocco', currency: 'MAD' },
+  { code: 'DZ', name: 'Algeria', currency: 'DZD' },
+  { code: 'TN', name: 'Tunisia', currency: 'TND' },
+  { code: 'SD', name: 'Sudan', currency: 'SDG' },
+  { code: 'ET', name: 'Ethiopia', currency: 'ETB' },
+  { code: 'SN', name: 'Senegal', currency: 'XOF' },
+  { code: 'CM', name: 'Cameroon', currency: 'XAF' },
+  { code: 'CI', name: 'Ivory Coast', currency: 'XOF' },
+  { code: 'AO', name: 'Angola', currency: 'AOA' },
+  { code: 'MZ', name: 'Mozambique', currency: 'MZN' },
+  { code: 'ZW', name: 'Zimbabwe', currency: 'ZWL' },
+  { code: 'KZ', name: 'Kazakhstan', currency: 'KZT' },
+  { code: 'UZ', name: 'Uzbekistan', currency: 'UZS' },
+  { code: 'SG', name: 'Singapore', currency: 'SGD' },
+  { code: 'MY', name: 'Malaysia', currency: 'MYR' },
+  { code: 'ID', name: 'Indonesia', currency: 'IDR' },
+  { code: 'TH', name: 'Thailand', currency: 'THB' },
+  { code: 'PH', name: 'Philippines', currency: 'PHP' },
+  { code: 'VN', name: 'Vietnam', currency: 'VND' },
+  { code: 'KH', name: 'Cambodia', currency: 'KHR' },
+  { code: 'LA', name: 'Laos', currency: 'LAK' },
+  { code: 'MM', name: 'Myanmar', currency: 'MMK' },
+  { code: 'LK', name: 'Sri Lanka', currency: 'LKR' },
+  { code: 'NP', name: 'Nepal', currency: 'NPR' },
+  { code: 'BT', name: 'Bhutan', currency: 'BTN' },
+  { code: 'MV', name: 'Maldives', currency: 'MVR' },
+  { code: 'MN', name: 'Mongolia', currency: 'MNT' },
+  { code: 'GE', name: 'Georgia', currency: 'GEL' },
+  { code: 'AM', name: 'Armenia', currency: 'AMD' },
+  { code: 'AZ', name: 'Azerbaijan', currency: 'AZN' },
+  { code: 'BY', name: 'Belarus', currency: 'BYN' },
+  { code: 'MD', name: 'Moldova', currency: 'MDL' },
+  { code: 'RS', name: 'Serbia', currency: 'RSD' },
+  { code: 'ME', name: 'Montenegro', currency: 'EUR' },
+  { code: 'AL', name: 'Albania', currency: 'ALL' },
+  { code: 'MK', name: 'North Macedonia', currency: 'MKD' },
+  { code: 'BA', name: 'Bosnia and Herzegovina', currency: 'BAM' },
+  { code: 'SI', name: 'Slovenia', currency: 'EUR' },
+  { code: 'SK', name: 'Slovakia', currency: 'EUR' },
+  { code: 'EE', name: 'Estonia', currency: 'EUR' },
+  { code: 'LV', name: 'Latvia', currency: 'EUR' },
+  { code: 'LT', name: 'Lithuania', currency: 'EUR' },
+  { code: 'FI', name: 'Finland', currency: 'EUR' },
+  { code: 'IE', name: 'Ireland', currency: 'EUR' },
+  { code: 'PT', name: 'Portugal', currency: 'EUR' },
+  { code: 'ES', name: 'Spain', currency: 'EUR' },
+  { code: 'IT', name: 'Italy', currency: 'EUR' },
+  { code: 'GR', name: 'Greece', currency: 'EUR' },
+  { code: 'FR', name: 'France', currency: 'EUR' },
+  { code: 'DE', name: 'Germany', currency: 'EUR' },
+  { code: 'BE', name: 'Belgium', currency: 'EUR' },
+  { code: 'NL', name: 'Netherlands', currency: 'EUR' },
+  { code: 'LU', name: 'Luxembourg', currency: 'EUR' },
+  { code: 'AT', name: 'Austria', currency: 'EUR' },
+  { code: 'MT', name: 'Malta', currency: 'EUR' },
+  { code: 'CY', name: 'Cyprus', currency: 'EUR' },
+];
+
+const contacts = [
+  { id: 'C001', name: 'Bruno Hoffman' },
+  { id: 'C002', name: 'Vanessa Saldia' },
+  { id: 'C003', name: 'Chad Kenley' },
+  { id: 'C004', name: 'Manuel Rovira' },
+  { id: 'C005', name: 'Alice Smith' },
+  { id: 'C006', name: 'Bob Lee' },
+  { id: 'C007', name: 'Cathy Brown' },
+  { id: 'C008', name: 'David Kim' },
+  { id: 'C009', name: 'Eva Green' },
+  { id: 'C010', name: 'Frank White' },
 ];
 
 function ExchangeRateChart() {
@@ -388,17 +506,13 @@ export default function DuplicatedDashboardPage() {
             <React.Fragment key={item.label}>
               <ListItem
                 component="button"
-                onClick={
-                  item.hasDropdown
-                    ? () => {
-                        if (item.label === 'Transactions') {
-                          setTransactionsOpen((open) => !open);
-                        } else if (item.label === 'Payments') {
-                          setPaymentsOpen((open) => !open);
-                        }
-                      }
-                    : undefined
-                }
+                onClick={item.label === 'Contacts' ? () => { window.location.href = '/ContactsDashboard'; } : item.hasDropdown ? () => {
+                  if (item.label === 'Transactions') {
+                    setTransactionsOpen((open) => !open);
+                  } else if (item.label === 'Payments') {
+                    setPaymentsOpen((open) => !open);
+                  }
+                } : undefined}
                 sx={{
                   borderRadius: item.active ? 2 : 0,
                   background: item.active ? '#F3F5F2' : 'transparent',
@@ -1023,13 +1137,37 @@ export default function DuplicatedDashboardPage() {
             )}
             {payStep === 1 && (
               <>
-                <TextField
-                  label="Recipient"
-                  name="recipient"
+                <Autocomplete
+                  freeSolo
+                  options={contacts.map((c) => ({ label: `${c.name} (${c.id})`, id: c.id, name: c.name }))}
                   value={payForm.recipient}
-                  onChange={handlePayChange}
-                  fullWidth
-                  required
+                  onChange={(_, newValue) => {
+                    if (typeof newValue === 'string') {
+                      setPayForm({ ...payForm, recipient: newValue });
+                    } else if (newValue && newValue.id) {
+                      setPayForm({ ...payForm, recipient: newValue.id });
+                    } else {
+                      setPayForm({ ...payForm, recipient: '' });
+                    }
+                  }}
+                  onInputChange={(_, newInputValue) => {
+                    setPayForm({ ...payForm, recipient: newInputValue });
+                  }}
+                  renderOption={(props, option) => (
+                    <li {...props} style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                      <span style={{ textAlign: 'left', flex: 1 }}>{option.name}</span>
+                      <span style={{ textAlign: 'right', minWidth: 60, color: '#888' }}>{option.id}</span>
+                    </li>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Recipient (select from contacts or enter ID)"
+                      name="recipient"
+                      required
+                      fullWidth
+                    />
+                  )}
                 />
                 <TextField
                   select

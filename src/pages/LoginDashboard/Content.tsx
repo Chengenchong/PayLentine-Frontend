@@ -93,10 +93,14 @@ const COLORS = {
 };
 
 const sidebarItems = [
-  { icon: <Home />, label: 'Home' },
-  { icon: <List sx={{ fontSize: 22 }} />, label: 'Transactions', active: true },
+  {
+    icon: <Home />,
+    label: 'Transactions',
+    active: true,
+    hasDropdown: true,
+  },
   { icon: <Payment />, label: 'Payments', hasDropdown: true },
-  { icon: <Group />, label: 'Recipients' },
+  { icon: <Group />, label: 'Contacts' },
   { icon: <BarChart />, label: 'Insights' },
 ];
 
@@ -382,11 +386,7 @@ export default function TransactionsPage() {
             <React.Fragment key={item.label}>
               <ListItem
                 component="button"
-                onClick={
-                  item.hasDropdown
-                    ? () => setPaymentsOpen((open) => !open)
-                    : undefined
-                }
+                onClick={item.label === 'Contacts' ? () => { window.location.href = '/ContactsDashboard'; } : item.hasDropdown ? () => setPaymentsOpen((open) => !open) : undefined}
                 sx={{
                   borderRadius: item.active ? 2 : 0,
                   background: item.active ? '#F3F5F2' : 'transparent',
