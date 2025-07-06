@@ -280,12 +280,6 @@ const recipientCountries = [
   { code: 'ZW', name: 'Zimbabwe', currency: 'ZWL' },
   { code: 'KZ', name: 'Kazakhstan', currency: 'KZT' },
   { code: 'UZ', name: 'Uzbekistan', currency: 'UZS' },
-  { code: 'SG', name: 'Singapore', currency: 'SGD' },
-  { code: 'MY', name: 'Malaysia', currency: 'MYR' },
-  { code: 'ID', name: 'Indonesia', currency: 'IDR' },
-  { code: 'TH', name: 'Thailand', currency: 'THB' },
-  { code: 'PH', name: 'Philippines', currency: 'PHP' },
-  { code: 'VN', name: 'Vietnam', currency: 'VND' },
   { code: 'KH', name: 'Cambodia', currency: 'KHR' },
   { code: 'LA', name: 'Laos', currency: 'LAK' },
   { code: 'MM', name: 'Myanmar', currency: 'MMK' },
@@ -428,6 +422,23 @@ export default function DuplicatedDashboardPage() {
   });
   const [payStep, setPayStep] = useState(0);
   const [selectedOption, setSelectedOption] = useState(swapOptions[0].key);
+  const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
+  const [withdrawStep, setWithdrawStep] = useState(0);
+  const [withdrawForm, setWithdrawForm] = useState({
+    type: '',
+    amount: '',
+    destination: '',
+    currency: selectedCurrency.code,
+  });
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [requestStep, setRequestStep] = useState(0);
+  const [requestForm, setRequestForm] = useState({
+    amount: '',
+    recipient: '',
+    recipientCountry: '',
+    note: '',
+    reference: '',
+  });
   const router = useRouter();
 
   // Get current date in 'D MMM YYYY' format
@@ -467,6 +478,29 @@ export default function DuplicatedDashboardPage() {
     setPayStep(0);
   };
 
+  const handleRequestOpen = () => {
+    setRequestDialogOpen(true);
+    setRequestStep(0);
+  };
+  const handleRequestClose = () => setRequestDialogOpen(false);
+  const handleRequestChange = (e: { target: { name: any; value: any } }) =>
+    setRequestForm({ ...requestForm, [e.target.name]: e.target.value });
+  const handleRequestNext = () => setRequestStep((s) => s + 1);
+  const handleRequestBack = () => setRequestStep((s) => s - 1);
+  const handleRequestSubmit = (e: { preventDefault: () => void }) => {
+    e.preventDefault();
+    // Here you would handle the request logic
+    setRequestDialogOpen(false);
+    setRequestForm({
+      amount: '',
+      recipient: '',
+      recipientCountry: '',
+      note: '',
+      reference: '',
+    });
+    setRequestStep(0);
+  };
+
   const paymentMethod = {
     name: 'Your balance',
     logo: '/Paylentine_logo.jpg',
@@ -479,6 +513,7 @@ export default function DuplicatedDashboardPage() {
   };
 
   const paySteps = ['Amount', 'Recipient', 'Option', 'Review & Pay'];
+  const requestSteps = ['Amount', 'Recipient', 'Review & Request'];
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', background: COLORS.bg }}>
@@ -803,35 +838,21 @@ export default function DuplicatedDashboardPage() {
                     ▲ $998.60
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                   <Button
                     variant="contained"
-                    sx={{
-                      background: COLORS.fontMain,
-                      borderRadius: 2,
-                      color: '#fff',
-                      fontWeight: 500,
-                      minWidth: 110,
-                      '&:hover': { background: COLORS.btnHoverMain },
-                    }}
                     onClick={handlePayOpen}
+                    sx={{ boxShadow: 3, minWidth: 115, px: 4 }}
                   >
                     Pay
                   </Button>
                   <Button
                     variant="outlined"
-                    sx={{
-                      borderRadius: 2,
-                      color: COLORS.fontMain,
-                      borderColor: COLORS.fontMain,
-                      fontWeight: 500,
-                      minWidth: 110,
-                      '&:hover': {
-                        background: COLORS.btnHoverMain,
-                        color: '#fff',
-                        borderColor: COLORS.btnHoverMain,
-                      },
+                    onClick={() => {
+                      setWithdrawDialogOpen(true);
+                      setWithdrawStep(0);
                     }}
+                    sx={{ ml: 0 }}
                   >
                     Withdraw
                   </Button>
@@ -839,25 +860,9 @@ export default function DuplicatedDashboardPage() {
                 {/* Quick Actions */}
                 <Box sx={{ display: 'flex', gap: 2, mt: 2, mb: 1 }}>
                   <Button
-                    startIcon={<Send />}
-                    size="small"
-                    sx={{
-                      color: COLORS.btnIconMain,
-                      borderColor: COLORS.btnIconMain,
-                      borderRadius: 2,
-                      fontWeight: 500,
-                      textTransform: 'none',
-                      border: '1px solid',
-                      px: 2,
-                      py: 0.5,
-                      minWidth: 0,
-                    }}
-                  >
-                    Transfer
-                  </Button>
-                  <Button
                     startIcon={<RequestQuote />}
                     size="small"
+                    onClick={handleRequestOpen}
                     sx={{
                       color: COLORS.btnIcon2,
                       borderColor: COLORS.btnIcon2,
@@ -1153,12 +1158,20 @@ export default function DuplicatedDashboardPage() {
                   onInputChange={(_, newInputValue) => {
                     setPayForm({ ...payForm, recipient: newInputValue });
                   }}
-                  renderOption={(props, option) => (
-                    <li {...props} style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                      <span style={{ textAlign: 'left', flex: 1 }}>{option.name}</span>
-                      <span style={{ textAlign: 'right', minWidth: 60, color: '#888' }}>{option.id}</span>
-                    </li>
-                  )}
+                  renderOption={(props, option) => {
+                    // Destructure key and other props to avoid React warning
+                    const { key, ...otherProps } = props;
+                    return (
+                      <li 
+                        key={key} 
+                        {...otherProps} 
+                        style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}
+                      >
+                        <span style={{ textAlign: 'left', flex: 1 }}>{option.name}</span>
+                        <span style={{ textAlign: 'right', minWidth: 60, color: '#888' }}>{option.id}</span>
+                      </li>
+                    );
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -1678,6 +1691,504 @@ export default function DuplicatedDashboardPage() {
               </Button>
             )}
             <Button onClick={handlePayClose} sx={{ color: COLORS.fontSub }}>
+              Cancel
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Withdraw Dialog */}
+      <Dialog
+        open={withdrawDialogOpen}
+        onClose={() => setWithdrawDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ color: COLORS.fontMain, fontWeight: 700 }}>
+          Withdraw Funds ({selectedCurrency.code})
+        </DialogTitle>
+        <Stepper
+          activeStep={withdrawStep}
+          alternativeLabel
+          sx={{ mb: 2, background: 'transparent', color: COLORS.btnIconMain }}
+        >
+          {["Withdraw", "Review & Confirm"].map((label) => (
+            <Step key={label}>
+              <StepLabel
+                sx={{
+                  '& .MuiStepLabel-label': {
+                    color: COLORS.fontMain,
+                    fontWeight: 600,
+                  },
+                  '& .MuiStepIcon-root': {
+                    color: COLORS.btnIconMain + ' !important',
+                  },
+                }}
+              >
+                {label}
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+        <form onSubmit={e => { e.preventDefault(); setWithdrawStep(1); }}>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {withdrawStep === 0 && (
+              <>
+                <RadioGroup
+                  value={withdrawForm.type}
+                  onChange={e => setWithdrawForm({ ...withdrawForm, type: e.target.value })}
+                >
+                  <FormControlLabel value="ewallet" control={<Radio />} label="Withdraw to E-Wallet" />
+                  <FormControlLabel value="bank" control={<Radio />} label="Withdraw to Bank" />
+                  <FormControlLabel value="currency" control={<Radio />} label="Withdraw to Other Currency Balance" />
+                </RadioGroup>
+                <TextField
+                  label="Amount"
+                  name="amount"
+                  value={withdrawForm.amount}
+                  onChange={e => setWithdrawForm({ ...withdrawForm, amount: e.target.value })}
+                  fullWidth
+                  required
+                  InputProps={{ startAdornment: selectedCurrency.code }}
+                />
+                {(withdrawForm.type === 'ewallet' || withdrawForm.type === 'bank') && (
+                  <TextField
+                    label={withdrawForm.type === 'ewallet' ? 'E-Wallet Account' : 'Bank Account'}
+                    name="destination"
+                    value={withdrawForm.destination}
+                    onChange={e => setWithdrawForm({ ...withdrawForm, destination: e.target.value })}
+                    fullWidth
+                    required
+                  />
+                )}
+                {withdrawForm.type === 'currency' && (
+                  <TextField
+                    select
+                    label="Target Currency"
+                    name="currency"
+                    value={withdrawForm.currency}
+                    onChange={e => setWithdrawForm({ ...withdrawForm, currency: e.target.value })}
+                    fullWidth
+                    required
+                  >
+                    {currencies.map(cur => (
+                      <MenuItem key={cur} value={cur}>{cur}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              </>
+            )}
+            {withdrawStep === 1 && (
+              <Box sx={{ p: 1, background: COLORS.bg, borderRadius: 2 }}>
+                <Typography variant="h6" sx={{ color: COLORS.fontMain, fontWeight: 700, mb: 2, textAlign: 'center' }}>
+                  Review & Confirm
+                </Typography>
+                <Box sx={{ background: '#fff', borderRadius: 2, p: 2, boxShadow: 1 }}>
+                  <Typography variant="subtitle2" sx={{ color: COLORS.fontMain, fontWeight: 700, mb: 1 }}>
+                    Withdrawal Summary
+                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2">Type:</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {withdrawForm.type === 'ewallet' ? 'E-Wallet' : withdrawForm.type === 'bank' ? 'Bank' : 'Other Currency Balance'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2">Amount:</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {selectedCurrency.code} {withdrawForm.amount}
+                    </Typography>
+                  </Box>
+                  {(withdrawForm.type === 'ewallet' || withdrawForm.type === 'bank') && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2">Destination:</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {withdrawForm.destination}
+                      </Typography>
+                    </Box>
+                  )}
+                  {withdrawForm.type === 'currency' && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2">Target Currency:</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {withdrawForm.currency}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            {withdrawStep === 1 ? (
+              <>
+                <Button onClick={() => setWithdrawStep(0)}>Back</Button>
+                <Button variant="contained" onClick={() => setWithdrawDialogOpen(false)}>
+                  Confirm
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button onClick={() => setWithdrawDialogOpen(false)}>Cancel</Button>
+                <Button variant="contained" type="submit">
+                  Next
+                </Button>
+              </>
+            )}
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Request Dialog */}
+      <Dialog
+        open={requestDialogOpen}
+        onClose={handleRequestClose}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ color: COLORS.fontMain, fontWeight: 700 }}>
+          Request Payment ({selectedCurrency.code})
+        </DialogTitle>
+        <Stepper
+          activeStep={requestStep}
+          alternativeLabel
+          sx={{ mb: 2, background: 'transparent', color: COLORS.btnIconMain }}
+        >
+          {requestSteps.map((label, idx) => (
+            <Step key={label}>
+              <StepLabel
+                sx={{
+                  '& .MuiStepLabel-label': {
+                    color: COLORS.fontMain,
+                    fontWeight: 600,
+                  },
+                  '& .MuiStepIcon-root': {
+                    color: COLORS.btnIconMain + ' !important',
+                  },
+                }}
+              >
+                {label}
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+        <form onSubmit={handleRequestSubmit}>
+          <DialogContent
+            sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+          >
+            {requestStep === 0 && (
+              <TextField
+                label="Amount to Request"
+                name="amount"
+                value={requestForm.amount}
+                onChange={handleRequestChange}
+                fullWidth
+                required
+                InputProps={{ startAdornment: selectedCurrency.code }}
+              />
+            )}
+            {requestStep === 1 && (
+              <>
+                <Autocomplete
+                  freeSolo
+                  options={contacts.map((c) => ({ label: `${c.name} (${c.id})`, id: c.id, name: c.name }))}
+                  value={requestForm.recipient}
+                  onChange={(_, newValue) => {
+                    if (typeof newValue === 'string') {
+                      setRequestForm({ ...requestForm, recipient: newValue });
+                    } else if (newValue && newValue.id) {
+                      setRequestForm({ ...requestForm, recipient: newValue.id });
+                    } else {
+                      setRequestForm({ ...requestForm, recipient: '' });
+                    }
+                  }}
+                  onInputChange={(_, newInputValue) => {
+                    setRequestForm({ ...requestForm, recipient: newInputValue });
+                  }}
+                  renderOption={(props, option) => {
+                    // Destructure key and other props to avoid React warning
+                    const { key, ...otherProps } = props;
+                    return (
+                      <li 
+                        key={key} 
+                        {...otherProps} 
+                        style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}
+                      >
+                        <span style={{ textAlign: 'left', flex: 1 }}>{option.name}</span>
+                        <span style={{ textAlign: 'right', minWidth: 60, color: '#888' }}>{option.id}</span>
+                      </li>
+                    );
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Recipient (select from contacts or enter ID)"
+                      name="recipient"
+                      required
+                      fullWidth
+                    />
+                  )}
+                />
+                <TextField
+                  select
+                  label="Recipient Country"
+                  name="recipientCountry"
+                  value={requestForm.recipientCountry}
+                  onChange={handleRequestChange}
+                  fullWidth
+                  required
+                  sx={{ mt: 2 }}
+                >
+                  {recipientCountries.map((country) => (
+                    <MenuItem key={country.code} value={country.code}>
+                      {country.name} ({country.currency})
+                    </MenuItem>
+                  ))}
+                </TextField>
+                {requestForm.recipientCountry && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="body2" sx={{ color: COLORS.btnIcon2 }}>
+                      Recipient will pay in{' '}
+                      <b>
+                        {
+                          recipientCountries.find(
+                            (c) => c.code === requestForm.recipientCountry
+                          )?.currency
+                        }
+                      </b>
+                    </Typography>
+                  </Box>
+                )}
+                <TextField
+                  label="Note"
+                  name="note"
+                  value={requestForm.note}
+                  onChange={handleRequestChange}
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  sx={{ mt: 2 }}
+                  placeholder="What is this payment request for?"
+                />
+              </>
+            )}
+            {requestStep === 2 && (
+              <Box sx={{ p: 1, background: COLORS.bg, borderRadius: 2 }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: COLORS.fontMain,
+                    fontWeight: 700,
+                    mb: 2,
+                    textAlign: 'center',
+                  }}
+                >
+                  Review & Request
+                </Typography>
+                <Box
+                  sx={{
+                    background: '#fff',
+                    borderRadius: 2,
+                    p: 2,
+                    boxShadow: 1,
+                  }}
+                >
+                  {/* Request Summary */}
+                  <Box sx={{ mb: 3 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ color: COLORS.fontMain, fontWeight: 700, mb: 1 }}
+                    >
+                      Request Summary
+                    </Typography>
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Typography variant="body2">You're requesting:</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {selectedCurrency.code} {requestForm.amount}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Typography variant="body2">From:</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {requestForm.recipient}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Typography variant="body2">Recipient's currency:</Typography>
+                      <Typography variant="body2">
+                        {
+                          recipientCountries.find(
+                            (c) => c.code === requestForm.recipientCountry
+                          )?.currency
+                        }
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Typography variant="body2">Note:</Typography>
+                      <Typography variant="body2">
+                        {requestForm.note || 'No note provided'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  {/* Request details */}
+                  <Box sx={{ mb: 2 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ color: COLORS.fontMain, fontWeight: 700 }}
+                      >
+                        Request details
+                      </Typography>
+                      <Button
+                        size="small"
+                        sx={{
+                          color: COLORS.btnIconMain,
+                          fontWeight: 600,
+                          textTransform: 'none',
+                        }}
+                        onClick={() => setRequestStep(0)}
+                      >
+                        Edit
+                      </Button>
+                    </Box>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        mt: 1,
+                      }}
+                    >
+                      <Typography variant="body2">You're requesting exactly</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {requestForm.amount} {selectedCurrency.code}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Typography variant="body2">
+                        {requestForm.recipient} will receive a payment request
+                      </Typography>
+                      <Typography variant="body2">
+                        via PayLentine
+                      </Typography>
+                    </Box>
+                  </Box>
+                  {/* Recipient details */}
+                  <Box sx={{ mb: 2 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ color: COLORS.fontMain, fontWeight: 700 }}
+                      >
+                        Recipient details
+                      </Typography>
+                      <Button
+                        size="small"
+                        sx={{
+                          color: COLORS.btnIcon2,
+                          fontWeight: 600,
+                          textTransform: 'none',
+                        }}
+                        onClick={() => setRequestStep(1)}
+                      >
+                        Change
+                      </Button>
+                    </Box>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        mt: 1,
+                      }}
+                    >
+                      <Typography variant="body2">
+                        Account holder name
+                      </Typography>
+                      <Typography variant="body2">
+                        {requestForm.recipient}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Typography variant="body2">Account provider</Typography>
+                      <Typography variant="body2">PayLentine</Typography>
+                    </Box>
+                  </Box>
+                  {/* Reference field */}
+                  <TextField
+                    label={`Reference for ${
+                      requestForm.recipient || 'recipient'
+                    } (optional)`}
+                    name="reference"
+                    value={requestForm.reference}
+                    onChange={handleRequestChange}
+                    fullWidth
+                    sx={{ mt: 1 }}
+                  />
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            {requestStep > 0 && requestStep < 2 && (
+              <Button onClick={handleRequestBack} sx={{ color: COLORS.fontMain }}>
+                Back
+              </Button>
+            )}
+            {requestStep < 2 && (
+              <Button
+                onClick={handleRequestNext}
+                variant="contained"
+                sx={{
+                  background: COLORS.btnIconMain,
+                  color: '#fff',
+                  fontWeight: 600,
+                }}
+                disabled={
+                  requestStep === 0
+                    ? !requestForm.amount
+                    : !(requestForm.recipient && requestForm.recipientCountry)
+                }
+              >
+                Next
+              </Button>
+            )}
+            {requestStep === 2 && (
+              <Button
+                type="submit"
+                variant="contained"
+                sx={{
+                  background: COLORS.fontMain,
+                  color: '#fff',
+                  fontWeight: 600,
+                }}
+              >
+                Send Request
+              </Button>
+            )}
+            <Button onClick={handleRequestClose} sx={{ color: COLORS.fontSub }}>
               Cancel
             </Button>
           </DialogActions>

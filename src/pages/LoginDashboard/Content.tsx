@@ -665,23 +665,6 @@ export default function TransactionsPage() {
                 {/* Quick Actions */}
                 <Box sx={{ display: 'flex', gap: 2, mt: 2, mb: 1 }}>
                   <Button
-                    startIcon={<Send />}
-                    size="small"
-                    sx={{
-                      color: COLORS.btnIconMain,
-                      borderColor: COLORS.btnIconMain,
-                      borderRadius: 2,
-                      fontWeight: 500,
-                      textTransform: 'none',
-                      border: '1px solid',
-                      px: 2,
-                      py: 0.5,
-                      minWidth: 0,
-                    }}
-                  >
-                    Transfer
-                  </Button>
-                  <Button
                     startIcon={<RequestQuote />}
                     size="small"
                     sx={{
