@@ -12,12 +12,23 @@ import {
 } from '@mui/material';
 import { Person } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import ProfileForm from './ProfileForm';
 
 export default function LoginHeader() {
   const router = useRouter();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const handleLogoClick = () => {
     router.push('/duplicateddashboard');
+  };
+
+  const handleProfileClick = () => {
+    setProfileOpen(true);
+  };
+
+  const handleProfileClose = () => {
+    setProfileOpen(false);
   };
   return (
     <AppBar
@@ -71,6 +82,7 @@ export default function LoginHeader() {
           </Box>
 
           <IconButton
+            onClick={handleProfileClick}
             sx={{
               ml: 2,
               p: 1,
@@ -92,6 +104,7 @@ export default function LoginHeader() {
           </IconButton>
         </Toolbar>
       </Container>
+      <ProfileForm open={profileOpen} onClose={handleProfileClose} />
     </AppBar>
   );
 }

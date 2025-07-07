@@ -1,24 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
   Paper,
   Button,
-  TextField,
-  InputAdornment,
-  MenuItem,
-  IconButton,
-  Pagination,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
+  Pagination,
+  TextField,
+  InputAdornment,
+  IconButton,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
-  Search,
-  FilterList,
-  Download,
-  AccountBalanceWallet,
   Home,
   Payment,
   Group,
@@ -31,8 +31,11 @@ import {
   Repeat,
   RequestQuote,
   CallSplit,
+  Search,
+  FilterList,
+  Download,
+  Add,
 } from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
 
 // Color palette
 const COLORS = {
@@ -47,13 +50,10 @@ const COLORS = {
 
 const sidebarItems = [
   {
-    icon: <Home />,
-    label: 'Transactions',
-    active: true,
-    hasDropdown: true,
+    icon: <Home />, label: 'Transactions', active: false, hasDropdown: true,
   },
   { icon: <Payment />, label: 'Payments', hasDropdown: true },
-  { icon: <Group />, label: 'Contacts' },
+  { icon: <Group />, label: 'Contacts', active: true },
   { icon: <BarChart />, label: 'Insights' },
 ];
 
@@ -69,103 +69,44 @@ const paymentSubItems = [
   { icon: <CallSplit />, label: 'Bill splits' },
 ];
 
-// Simulate more transaction data for pagination (40+ rows)
-const baseUsers = [
-  { user: 'Bruno Hoffman', positive: true },
-  { user: 'Vanessa Saldia', positive: true },
-  { user: 'Chad Kenley', positive: false },
-  { user: 'Manuel Rovira', positive: true },
-  { user: 'Alice Smith', positive: true },
-  { user: 'Bob Lee', positive: false },
-  { user: 'Cathy Brown', positive: true },
-  { user: 'David Kim', positive: false },
-  { user: 'Eva Green', positive: true },
-  { user: 'Frank White', positive: true },
-];
-const types = ['Receiving money', 'Payment', 'Refund', 'Top Up'];
-const amounts = [
-  '+$300',
-  '+$400',
-  '-$180',
-  '+$260',
-  '+$500',
-  '-$120',
-  '+$700',
-  '-$90',
-  '+$1000',
-  '-$50',
-];
-const dates = [
-  '2020-05-24',
-  '2020-05-25',
-  '2020-05-26',
-  '2020-05-27',
-  '2020-05-28',
-  '2020-05-29',
-  '2020-05-30',
-  '2020-05-31',
-  '2020-06-01',
-  '2020-06-02',
-];
-
-const transactions = Array.from({ length: 40 }).map((_, i) => {
-  const userIdx = i % baseUsers.length;
-  return {
-    id: String(900000289 - i),
-    type: types[i % types.length],
-    user: baseUsers[userIdx].user,
-    amount: amounts[i % amounts.length],
-    date: dates[i % dates.length],
-    positive: baseUsers[userIdx].positive,
-  };
-});
-
-const typeOptions = [
-  { value: '', label: 'All Types' },
-  ...types.map((t) => ({ value: t, label: t })),
+const contacts = [
+  { id: 'C001', name: 'Bruno Hoffman' },
+  { id: 'C002', name: 'Vanessa Saldia' },
+  { id: 'C003', name: 'Chad Kenley' },
+  { id: 'C004', name: 'Manuel Rovira' },
+  { id: 'C005', name: 'Alice Smith' },
+  { id: 'C006', name: 'Bob Lee' },
+  { id: 'C007', name: 'Cathy Brown' },
+  { id: 'C008', name: 'David Kim' },
+  { id: 'C009', name: 'Eva Green' },
+  { id: 'C010', name: 'Frank White' },
 ];
 
 const ROWS_PER_PAGE = 10;
 
-const gridTemplate = '60px 200px 300px 1fr 180px 180px';
-
 const Content = () => {
-  const router = useRouter();
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
   const [page, setPage] = useState(1);
   const [paymentsOpen, setPaymentsOpen] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
-
-  // Filtered transactions
-  const filtered = useMemo(() => {
-    return transactions.filter((tx) => {
-      const matchesSearch =
-        tx.user.toLowerCase().includes(search.toLowerCase()) ||
-        tx.id.includes(search) ||
-        tx.type.toLowerCase().includes(search.toLowerCase());
-      const matchesType = typeFilter ? tx.type === typeFilter : true;
-      return matchesSearch && matchesType;
-    });
-  }, [search, typeFilter]);
-
-  // Pagination
-  const pageCount = Math.ceil(filtered.length / ROWS_PER_PAGE);
-  const paginated = filtered.slice(
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('');
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [newContact, setNewContact] = useState({ id: '', name: '' });
+  const [contactsState, setContactsState] = useState(contacts);
+  const pageCount = Math.ceil(contactsState.length / ROWS_PER_PAGE);
+  const filteredContacts = contactsState.filter((contact) =>
+    contact.name.toLowerCase().includes(search.toLowerCase())
+  );
+  const paginated = filteredContacts.slice(
     (page - 1) * ROWS_PER_PAGE,
     page * ROWS_PER_PAGE
   );
 
-  // Download CSV stub
-  const handleDownload = () => {
-    // In a real app, generate and download CSV here
-    alert('Download CSV feature coming soon!');
-  };
-
-  const handlePageChange = (_: any, value: number) => setPage(value);
-
   const handleLogout = () => {
-    router.push('/');
+    window.location.href = '/';
+  };
+  const handleDownload = () => {
+    alert('Download CSV feature coming soon!');
   };
 
   return (
@@ -258,87 +199,73 @@ const Content = () => {
                   />
                 )}
               </ListItem>
-              {item.hasDropdown &&
-                item.label === 'Transactions' &&
-                transactionsOpen && (
-                  <List disablePadding>
-                    {transactionSubItems.map((sub, subIdx) => (
-                      <ListItem
-                        key={sub.label}
-                        component="button"
-                        onClick={() => {
-                          if (sub.label === 'Transaction History') {
-                            // Already on transaction history page
-                          }
-                        }}
-                        sx={{
-                          pl: 3.5,
-                          pr: 1.5,
-                          py: 0.25,
-                          mb: 1.5,
-                          minHeight: 26,
-                          color: '#6B6B6B',
-                          fontWeight: 500,
-                          fontSize: 11,
-                          borderRadius: 2,
+              {item.hasDropdown && item.label === 'Transactions' && transactionsOpen && (
+                <List disablePadding>
+                  {transactionSubItems.map((sub, subIdx) => (
+                    <ListItem
+                      key={sub.label}
+                      component="button"
+                      onClick={() => {
+                        if (sub.label === 'Transaction History') {
+                          window.location.href = '/transaction-history';
+                        }
+                      }}
+                      sx={{
+                        pl: 3.5,
+                        pr: 1.5,
+                        py: 0.25,
+                        mb: 1.5,
+                        minHeight: 26,
+                        color: '#6B6B6B',
+                        fontWeight: 500,
+                        fontSize: 11,
+                        borderRadius: 2,
+                        background: '#F3F5F2',
+                        '&:hover': {
                           background: '#F3F5F2',
-                          '&:hover': {
-                            background: '#F3F5F2',
-                            color: COLORS.fontMain,
-                          },
-                        }}
-                      >
-                        <ListItemIcon
-                          sx={{ minWidth: 20, color: '#B0B0B0', fontSize: 13 }}
-                        >
-                          {React.cloneElement(sub.icon, { fontSize: 'small' })}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={sub.label}
-                          primaryTypographyProps={{ fontSize: 11 }}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
-              {item.hasDropdown &&
-                item.label === 'Payments' &&
-                paymentsOpen && (
-                  <List disablePadding>
-                    {paymentSubItems.map((sub, subIdx) => (
-                      <ListItem
-                        key={sub.label}
-                        component="button"
-                        sx={{
-                          pl: 3.5,
-                          pr: 1.5,
-                          py: 0.25,
-                          mb: 1.5,
-                          minHeight: 26,
-                          color: '#6B6B6B',
-                          fontWeight: 500,
-                          fontSize: 11,
-                          borderRadius: 2,
-                          background: 'transparent',
-                          '&:hover': {
-                            background: '#F3F5F2',
-                            color: COLORS.fontMain,
-                          },
-                        }}
-                      >
-                        <ListItemIcon
-                          sx={{ minWidth: 20, color: '#B0B0B0', fontSize: 13 }}
-                        >
-                          {React.cloneElement(sub.icon, { fontSize: 'small' })}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={sub.label}
-                          primaryTypographyProps={{ fontSize: 11 }}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
+                          color: COLORS.fontMain,
+                        },
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 20, color: '#B0B0B0', fontSize: 13 }}>
+                        {React.cloneElement(sub.icon, { fontSize: 'small' })}
+                      </ListItemIcon>
+                      <ListItemText primary={sub.label} primaryTypographyProps={{ fontSize: 11 }} />
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+              {item.hasDropdown && item.label === 'Payments' && paymentsOpen && (
+                <List disablePadding>
+                  {paymentSubItems.map((sub, subIdx) => (
+                    <ListItem
+                      key={sub.label}
+                      component="button"
+                      sx={{
+                        pl: 3.5,
+                        pr: 1.5,
+                        py: 0.25,
+                        mb: 1.5,
+                        minHeight: 26,
+                        color: '#6B6B6B',
+                        fontWeight: 500,
+                        fontSize: 11,
+                        borderRadius: 2,
+                        background: 'transparent',
+                        '&:hover': {
+                          background: '#F3F5F2',
+                          color: COLORS.fontMain,
+                        },
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 20, color: '#B0B0B0', fontSize: 13 }}>
+                        {React.cloneElement(sub.icon, { fontSize: 'small' })}
+                      </ListItemIcon>
+                      <ListItemText primary={sub.label} primaryTypographyProps={{ fontSize: 11 }} />
+                    </ListItem>
+                  ))}
+                </List>
+              )}
             </React.Fragment>
           ))}
         </List>
@@ -386,11 +313,11 @@ const Content = () => {
             variant="h4"
             sx={{ fontWeight: 700, color: COLORS.fontMain }}
           >
-            Transaction History
+            Contacts
           </Typography>
           <Button
             variant="outlined"
-            onClick={() => router.push('/duplicateddashboard')}
+            onClick={() => { window.location.href = '/duplicateddashboard'; }}
             sx={{
               ml: 'auto',
               color: COLORS.btnIconMain,
@@ -405,6 +332,22 @@ const Content = () => {
           >
             Back
           </Button>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => setAddDialogOpen(true)}
+            sx={{
+              color: '#fff',
+              backgroundColor: COLORS.btnIconMain,
+              fontWeight: 600,
+              ml: 1,
+              '&:hover': {
+                backgroundColor: COLORS.btnHoverMain,
+              },
+            }}
+          >
+            Add Contact
+          </Button>
         </Box>
 
         {/* Search and Filter Controls */}
@@ -418,7 +361,7 @@ const Content = () => {
         >
           <TextField
             size="small"
-            placeholder="Search by user, type, or ID"
+            placeholder="Search by name"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -442,11 +385,8 @@ const Content = () => {
           <TextField
             select
             size="small"
-            value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter(e.target.value);
-              setPage(1);
-            }}
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -462,11 +402,8 @@ const Content = () => {
             }}
             sx={{ width: 200 }}
           >
-            {typeOptions.map((opt) => (
-              <MenuItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </MenuItem>
-            ))}
+            <MenuItem value="">All Contacts</MenuItem>
+            {/* Add more filter options here if needed */}
           </TextField>
           <IconButton
             onClick={handleDownload}
@@ -479,7 +416,7 @@ const Content = () => {
           </IconButton>
         </Box>
 
-        {/* Transaction Table */}
+        {/* Contacts Table */}
         <Paper
           sx={{
             borderRadius: 3,
@@ -493,7 +430,7 @@ const Content = () => {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: gridTemplate,
+              gridTemplateColumns: '60px 200px 1fr',
               py: 2,
               borderBottom: '1px solid #F0F0F0',
               fontWeight: 600,
@@ -503,25 +440,22 @@ const Content = () => {
           >
             <Box sx={{ textAlign: 'center' }}>N°</Box>
             <Box sx={{ textAlign: 'center' }}>ID</Box>
-            <Box sx={{ textAlign: 'center' }}>Transfer Type</Box>
-            <Box sx={{ textAlign: 'center' }}>User</Box>
-            <Box sx={{ textAlign: 'center' }}>Amount</Box>
-            <Box sx={{ textAlign: 'center' }}>Date</Box>
+            <Box sx={{ textAlign: 'center' }}>Name</Box>
           </Box>
 
-          {/* Transaction List */}
+          {/* Contacts List */}
           <Box sx={{ minHeight: 400 }}>
             {paginated.length === 0 ? (
               <Typography sx={{ p: 4, textAlign: 'center', color: '#B0B0B0' }}>
-                No transactions found.
+                No contacts found.
               </Typography>
             ) : (
-              paginated.map((tx, idx) => (
+              paginated.map((contact, idx) => (
                 <Box
-                  key={tx.id}
+                  key={contact.id}
                   sx={{
                     display: 'grid',
-                    gridTemplateColumns: gridTemplate,
+                    gridTemplateColumns: '60px 200px 1fr',
                     alignItems: 'center',
                     py: 1.5,
                     borderBottom:
@@ -536,22 +470,11 @@ const Content = () => {
                   <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
                     {(page - 1) * ROWS_PER_PAGE + idx + 1}
                   </Box>
-                  <Box sx={{ textAlign: 'center' }}>{tx.id}</Box>
-                  <Box sx={{ textAlign: 'center' }}>{tx.type}</Box>
                   <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
-                    {tx.user}
+                    {contact.id}
                   </Box>
-                  <Box
-                    sx={{
-                      textAlign: 'center',
-                      fontWeight: 600,
-                      color: tx.positive ? COLORS.btnIcon2 : COLORS.fontSub,
-                    }}
-                  >
-                    {tx.amount}
-                  </Box>
-                  <Box sx={{ textAlign: 'center', color: '#B0B0B0' }}>
-                    {tx.date}
+                  <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
+                    {contact.name}
                   </Box>
                 </Box>
               ))
@@ -563,11 +486,45 @@ const Content = () => {
             <Pagination
               count={pageCount}
               page={page}
-              onChange={handlePageChange}
+              onChange={(_, value) => setPage(value)}
               size="small"
             />
           </Box>
         </Paper>
+
+        {/* Add Contact Dialog */}
+        <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)}>
+          <DialogTitle>Add New Contact</DialogTitle>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 300 }}>
+            <TextField
+              label="ID"
+              value={newContact.id}
+              onChange={e => setNewContact({ ...newContact, id: e.target.value })}
+              fullWidth
+            />
+            <TextField
+              label="Name"
+              value={newContact.name}
+              onChange={e => setNewContact({ ...newContact, name: e.target.value })}
+              fullWidth
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                if (newContact.id && newContact.name) {
+                  setContactsState([...contactsState, newContact]);
+                  setNewContact({ id: '', name: '' });
+                  setAddDialogOpen(false);
+                }
+              }}
+            >
+              Add
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Box>
   );
