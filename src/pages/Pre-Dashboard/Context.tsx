@@ -3,7 +3,7 @@
 import { Box, Typography, Button } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardContent from '../Dashboard/Context';
+import DuplicatedDashboardContent from '../DuplicatedDashboard/Context';
 
 export default function PreDashboardContent() {
   const [welcomeText, setWelcomeText] = useState('');
@@ -52,12 +52,12 @@ export default function PreDashboardContent() {
   const handleLetsPay = () => {
     setFadeOut(true);
     setTimeout(() => {
-      setShowDashboard(true);
+      router.push('/duplicateddashboard');
     }, 1000);
   };
 
   if (showDashboard) {
-    return <DashboardContent />;
+    return <DuplicatedDashboardContent />;
   }
 
   return (
@@ -81,7 +81,7 @@ export default function PreDashboardContent() {
             zIndex: 1,
           }}
         >
-          <DashboardContent />
+          <DuplicatedDashboardContent />
         </Box>
 
         {/* Animation Overlay */}

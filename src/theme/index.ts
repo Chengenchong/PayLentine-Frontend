@@ -68,7 +68,7 @@ const theme = createTheme({
     },
     button: {
       fontFamily: '"Fredoka", "Roboto", "Helvetica", "Arial", sans-serif',
-    }
+    },
   },
   shape: {
     borderRadius: 12,
