@@ -13,6 +13,9 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  useTheme,
+  useMediaQuery,
+  Drawer,
 } from '@mui/material';
 import {
   Search,
@@ -31,6 +34,8 @@ import {
   Repeat,
   RequestQuote,
   CallSplit,
+  Menu,
+  Close,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 
@@ -130,6 +135,9 @@ const ROWS_PER_PAGE = 10;
 const gridTemplate = '60px 200px 300px 1fr 180px 180px';
 
 const Content = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -168,223 +176,506 @@ const Content = () => {
     router.push('/');
   };
 
+  const handleMobileMenuToggle = () => {
+    setMobileDrawerOpen(!mobileDrawerOpen);
+  };
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', background: COLORS.bg }}>
-      {/* Sidebar */}
-      <Box
-        sx={{
-          width: 160,
-          background: '#fff',
-          m: 0,
-          p: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: 'none',
-          borderRadius: 0,
-          borderRight: '1px solid #F0F0F0',
-          minHeight: '100vh',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          zIndex: 1000,
-        }}
-      >
-        <List sx={{ px: 0, pt: 0, mt: '80px' }}>
-          {sidebarItems.map((item, idx) => (
-            <React.Fragment key={item.label}>
-              <ListItem
-                component="button"
-                onClick={
-                  item.label === 'Contacts'
-                    ? () => { window.location.href = '/ContactsDashboard'; }
-                    : item.hasDropdown
-                    ? () => {
-                        if (item.label === 'Transactions') {
-                          setTransactionsOpen((open) => !open);
-                        } else if (item.label === 'Payments') {
-                          setPaymentsOpen((open) => !open);
-                        }
-                      }
-                    : undefined
-                }
-                sx={{
-                  borderRadius: item.active ? 2 : 0,
-                  background: item.active ? '#F3F5F2' : 'transparent',
-                  mb: 2,
-                  p: 0,
-                  color: item.active ? COLORS.fontMain : '#6B6B6B',
-                  fontWeight: item.active ? 700 : 500,
-                  minHeight: 32,
-                  px: 1.5,
-                  justifyContent: 'flex-start',
-                  alignItems: 'center',
-                  transition: 'background 0.2s',
-                  '&:hover': {
-                    background: '#F3F5F2',
-                    color: COLORS.fontMain,
-                  },
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 24,
-                    color: item.active ? COLORS.fontMain : '#B0B0B0',
-                    fontSize: 16,
-                  }}
-                >
-                  {React.cloneElement(item.icon, { fontSize: 'small' })}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{
-                    fontWeight: item.active ? 700 : 500,
-                    color: item.active ? COLORS.fontMain : '#6B6B6B',
-                    fontSize: 12,
-                  }}
-                />
-                {item.hasDropdown && (
-                  <ExpandMore
-                    sx={{
-                      color: '#B0B0B0',
-                      fontSize: 14,
-                      ml: -0.5,
-                      transform:
-                        (item.label === 'Transactions' && transactionsOpen) ||
-                        (item.label === 'Payments' && paymentsOpen)
-                          ? 'rotate(180deg)'
-                          : 'none',
-                      transition: 'transform 0.2s',
-                    }}
-                  />
-                )}
-              </ListItem>
-              {item.hasDropdown &&
-                item.label === 'Transactions' &&
-                transactionsOpen && (
-                  <List disablePadding>
-                    {transactionSubItems.map((sub, subIdx) => (
-                      <ListItem
-                        key={sub.label}
-                        component="button"
-                        onClick={() => {
-                          if (sub.label === 'Transaction History') {
-                            // Already on transaction history page
-                          }
-                        }}
-                        sx={{
-                          pl: 3.5,
-                          pr: 1.5,
-                          py: 0.25,
-                          mb: 1.5,
-                          minHeight: 26,
-                          color: '#6B6B6B',
-                          fontWeight: 500,
-                          fontSize: 11,
-                          borderRadius: 2,
-                          background: '#F3F5F2',
-                          '&:hover': {
-                            background: '#F3F5F2',
-                            color: COLORS.fontMain,
-                          },
-                        }}
-                      >
-                        <ListItemIcon
-                          sx={{ minWidth: 20, color: '#B0B0B0', fontSize: 13 }}
-                        >
-                          {React.cloneElement(sub.icon, { fontSize: 'small' })}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={sub.label}
-                          primaryTypographyProps={{ fontSize: 11 }}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
-              {item.hasDropdown &&
-                item.label === 'Payments' &&
-                paymentsOpen && (
-                  <List disablePadding>
-                    {paymentSubItems.map((sub, subIdx) => (
-                      <ListItem
-                        key={sub.label}
-                        component="button"
-                        sx={{
-                          pl: 3.5,
-                          pr: 1.5,
-                          py: 0.25,
-                          mb: 1.5,
-                          minHeight: 26,
-                          color: '#6B6B6B',
-                          fontWeight: 500,
-                          fontSize: 11,
-                          borderRadius: 2,
-                          background: 'transparent',
-                          '&:hover': {
-                            background: '#F3F5F2',
-                            color: COLORS.fontMain,
-                          },
-                        }}
-                      >
-                        <ListItemIcon
-                          sx={{ minWidth: 20, color: '#B0B0B0', fontSize: 13 }}
-                        >
-                          {React.cloneElement(sub.icon, { fontSize: 'small' })}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={sub.label}
-                          primaryTypographyProps={{ fontSize: 11 }}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
-            </React.Fragment>
-          ))}
-        </List>
-        <Box flexGrow={1} />
-        <Button
-          startIcon={<Logout fontSize="small" />}
-          onClick={handleLogout}
+      {/* Mobile Menu Button */}
+      {isMobile && (
+        <IconButton
+          onClick={handleMobileMenuToggle}
           sx={{
-            m: 2,
-            mb: 3,
-            color: '#B0B0B0',
-            fontWeight: 600,
-            fontSize: 13,
-            justifyContent: 'flex-start',
-            textTransform: 'none',
-            borderRadius: 2,
-            px: 2,
-            py: 1,
+            position: 'fixed',
+            top: 90,
+            left: 16,
+            zIndex: 1300,
+            background: '#fff',
+            boxShadow: 2,
             '&:hover': {
-              background: '#F3F5F2',
-              color: COLORS.fontMain,
+              background: '#f5f5f5',
             },
           }}
-          fullWidth
         >
-          Logout
-        </Button>
-      </Box>
+          <Menu />
+        </IconButton>
+      )}
+
+      {/* Desktop Sidebar */}
+      {!isMobile && (
+        <Box
+          sx={{
+            width: 160,
+            background: '#fff',
+            m: 0,
+            p: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: 'none',
+            borderRadius: 0,
+            borderRight: '1px solid #F0F0F0',
+            minHeight: '100vh',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            zIndex: 1000,
+          }}
+        >
+          <List sx={{ px: 0, pt: 0, mt: '80px' }}>
+            {sidebarItems.map((item, idx) => (
+              <React.Fragment key={item.label}>
+                <ListItem
+                  component="button"
+                  onClick={
+                    item.label === 'Contacts'
+                      ? () => {
+                          window.location.href = '/ContactsDashboard';
+                        }
+                      : item.hasDropdown
+                      ? () => {
+                          if (item.label === 'Transactions') {
+                            setTransactionsOpen((open) => !open);
+                          } else if (item.label === 'Payments') {
+                            setPaymentsOpen((open) => !open);
+                          }
+                        }
+                      : undefined
+                  }
+                  sx={{
+                    borderRadius: item.active ? 2 : 0,
+                    background: item.active ? '#F3F5F2' : 'transparent',
+                    mb: 2,
+                    p: 0,
+                    color: item.active ? COLORS.fontMain : '#6B6B6B',
+                    fontWeight: item.active ? 700 : 500,
+                    minHeight: 32,
+                    px: 1.5,
+                    justifyContent: 'flex-start',
+                    alignItems: 'center',
+                    transition: 'background 0.2s',
+                    '&:hover': {
+                      background: '#F3F5F2',
+                      color: COLORS.fontMain,
+                    },
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 24,
+                      color: item.active ? COLORS.fontMain : '#B0B0B0',
+                      fontSize: 16,
+                    }}
+                  >
+                    {React.cloneElement(item.icon, { fontSize: 'small' })}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontWeight: item.active ? 700 : 500,
+                      color: item.active ? COLORS.fontMain : '#6B6B6B',
+                      fontSize: 12,
+                    }}
+                  />
+                  {item.hasDropdown && (
+                    <ExpandMore
+                      sx={{
+                        color: '#B0B0B0',
+                        fontSize: 14,
+                        ml: -0.5,
+                        transform:
+                          (item.label === 'Transactions' && transactionsOpen) ||
+                          (item.label === 'Payments' && paymentsOpen)
+                            ? 'rotate(180deg)'
+                            : 'none',
+                        transition: 'transform 0.2s',
+                      }}
+                    />
+                  )}
+                </ListItem>
+                {item.hasDropdown &&
+                  item.label === 'Transactions' &&
+                  transactionsOpen && (
+                    <List disablePadding>
+                      {transactionSubItems.map((sub, subIdx) => (
+                        <ListItem
+                          key={sub.label}
+                          component="button"
+                          onClick={() => {
+                            if (sub.label === 'Transaction History') {
+                              // Already on transaction history page
+                            }
+                          }}
+                          sx={{
+                            pl: 3.5,
+                            pr: 1.5,
+                            py: 0.25,
+                            mb: 1.5,
+                            minHeight: 26,
+                            color: '#6B6B6B',
+                            fontWeight: 500,
+                            fontSize: 11,
+                            borderRadius: 2,
+                            background: '#F3F5F2',
+                            '&:hover': {
+                              background: '#F3F5F2',
+                              color: COLORS.fontMain,
+                            },
+                          }}
+                        >
+                          <ListItemIcon
+                            sx={{
+                              minWidth: 20,
+                              color: '#B0B0B0',
+                              fontSize: 13,
+                            }}
+                          >
+                            {React.cloneElement(sub.icon, {
+                              fontSize: 'small',
+                            })}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={sub.label}
+                            primaryTypographyProps={{ fontSize: 11 }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+                {item.hasDropdown &&
+                  item.label === 'Payments' &&
+                  paymentsOpen && (
+                    <List disablePadding>
+                      {paymentSubItems.map((sub, subIdx) => (
+                        <ListItem
+                          key={sub.label}
+                          component="button"
+                          sx={{
+                            pl: 3.5,
+                            pr: 1.5,
+                            py: 0.25,
+                            mb: 1.5,
+                            minHeight: 26,
+                            color: '#6B6B6B',
+                            fontWeight: 500,
+                            fontSize: 11,
+                            borderRadius: 2,
+                            background: 'transparent',
+                            '&:hover': {
+                              background: '#F3F5F2',
+                              color: COLORS.fontMain,
+                            },
+                          }}
+                        >
+                          <ListItemIcon
+                            sx={{
+                              minWidth: 20,
+                              color: '#B0B0B0',
+                              fontSize: 13,
+                            }}
+                          >
+                            {React.cloneElement(sub.icon, {
+                              fontSize: 'small',
+                            })}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={sub.label}
+                            primaryTypographyProps={{ fontSize: 11 }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+              </React.Fragment>
+            ))}
+          </List>
+          <Box flexGrow={1} />
+          <Button
+            startIcon={<Logout fontSize="small" />}
+            onClick={handleLogout}
+            sx={{
+              m: 2,
+              mb: 3,
+              color: '#B0B0B0',
+              fontWeight: 600,
+              fontSize: 13,
+              justifyContent: 'flex-start',
+              textTransform: 'none',
+              borderRadius: 2,
+              px: 2,
+              py: 1,
+              '&:hover': {
+                background: '#F3F5F2',
+                color: COLORS.fontMain,
+              },
+            }}
+            fullWidth
+          >
+            Logout
+          </Button>
+        </Box>
+      )}
+
+      {/* Mobile Drawer */}
+      {isMobile && (
+        <Drawer
+          anchor="left"
+          open={mobileDrawerOpen}
+          onClose={handleMobileMenuToggle}
+          ModalProps={{
+            keepMounted: true, // Better open performance on mobile
+          }}
+          sx={{
+            '& .MuiDrawer-paper': {
+              width: 250,
+              boxSizing: 'border-box',
+              backgroundColor: '#fff',
+            },
+          }}
+        >
+          <Box
+            sx={{
+              mt: 2,
+              mb: 2,
+              display: 'flex',
+              justifyContent: 'flex-end',
+              px: 1,
+            }}
+          >
+            <IconButton onClick={handleMobileMenuToggle}>
+              <Close />
+            </IconButton>
+          </Box>
+          <List sx={{ px: 0, pt: 0 }}>
+            {sidebarItems.map((item, idx) => (
+              <React.Fragment key={item.label}>
+                <ListItem
+                  component="button"
+                  onClick={
+                    item.label === 'Contacts'
+                      ? () => {
+                          window.location.href = '/ContactsDashboard';
+                          setMobileDrawerOpen(false);
+                        }
+                      : item.hasDropdown
+                      ? () => {
+                          if (item.label === 'Transactions') {
+                            setTransactionsOpen((open) => !open);
+                          } else if (item.label === 'Payments') {
+                            setPaymentsOpen((open) => !open);
+                          }
+                        }
+                      : undefined
+                  }
+                  sx={{
+                    borderRadius: item.active ? 2 : 0,
+                    background: item.active ? '#F3F5F2' : 'transparent',
+                    mb: 2,
+                    mx: 1,
+                    p: 0,
+                    color: item.active ? COLORS.fontMain : '#6B6B6B',
+                    fontWeight: item.active ? 700 : 500,
+                    minHeight: 40,
+                    px: 2,
+                    justifyContent: 'flex-start',
+                    alignItems: 'center',
+                    transition: 'background 0.2s',
+                    '&:hover': {
+                      background: '#F3F5F2',
+                      color: COLORS.fontMain,
+                    },
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 30,
+                      color: item.active ? COLORS.fontMain : '#B0B0B0',
+                      fontSize: 18,
+                    }}
+                  >
+                    {React.cloneElement(item.icon, { fontSize: 'medium' })}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontWeight: item.active ? 700 : 500,
+                      color: item.active ? COLORS.fontMain : '#6B6B6B',
+                      fontSize: 14,
+                    }}
+                  />
+                  {item.hasDropdown && (
+                    <ExpandMore
+                      sx={{
+                        color: '#B0B0B0',
+                        fontSize: 16,
+                        transform:
+                          (item.label === 'Transactions' && transactionsOpen) ||
+                          (item.label === 'Payments' && paymentsOpen)
+                            ? 'rotate(180deg)'
+                            : 'none',
+                        transition: 'transform 0.2s',
+                      }}
+                    />
+                  )}
+                </ListItem>
+                {item.hasDropdown &&
+                  item.label === 'Transactions' &&
+                  transactionsOpen && (
+                    <List disablePadding>
+                      {transactionSubItems.map((sub, subIdx) => (
+                        <ListItem
+                          key={sub.label}
+                          component="button"
+                          onClick={() => {
+                            if (sub.label === 'Transaction History') {
+                              // Already on transaction history page
+                            }
+                            setMobileDrawerOpen(false);
+                          }}
+                          sx={{
+                            pl: 4,
+                            pr: 2,
+                            py: 1,
+                            mx: 1,
+                            mb: 1,
+                            minHeight: 35,
+                            color: '#6B6B6B',
+                            fontWeight: 500,
+                            fontSize: 13,
+                            borderRadius: 2,
+                            background: '#F3F5F2',
+                            '&:hover': {
+                              background: '#F3F5F2',
+                              color: COLORS.fontMain,
+                            },
+                          }}
+                        >
+                          <ListItemIcon
+                            sx={{
+                              minWidth: 25,
+                              color: '#B0B0B0',
+                              fontSize: 15,
+                            }}
+                          >
+                            {React.cloneElement(sub.icon, {
+                              fontSize: 'small',
+                            })}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={sub.label}
+                            primaryTypographyProps={{ fontSize: 13 }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+                {item.hasDropdown &&
+                  item.label === 'Payments' &&
+                  paymentsOpen && (
+                    <List disablePadding>
+                      {paymentSubItems.map((sub, subIdx) => (
+                        <ListItem
+                          key={sub.label}
+                          component="button"
+                          sx={{
+                            pl: 4,
+                            pr: 2,
+                            py: 1,
+                            mx: 1,
+                            mb: 1,
+                            minHeight: 35,
+                            color: '#6B6B6B',
+                            fontWeight: 500,
+                            fontSize: 13,
+                            borderRadius: 2,
+                            background: 'transparent',
+                            '&:hover': {
+                              background: '#F3F5F2',
+                              color: COLORS.fontMain,
+                            },
+                          }}
+                        >
+                          <ListItemIcon
+                            sx={{
+                              minWidth: 25,
+                              color: '#B0B0B0',
+                              fontSize: 15,
+                            }}
+                          >
+                            {React.cloneElement(sub.icon, {
+                              fontSize: 'small',
+                            })}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={sub.label}
+                            primaryTypographyProps={{ fontSize: 13 }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+              </React.Fragment>
+            ))}
+          </List>
+          <Box flexGrow={1} />
+          <Button
+            startIcon={<Logout fontSize="small" />}
+            onClick={() => {
+              handleLogout();
+              setMobileDrawerOpen(false);
+            }}
+            sx={{
+              m: 2,
+              mb: 3,
+              color: '#B0B0B0',
+              fontWeight: 600,
+              fontSize: 14,
+              justifyContent: 'flex-start',
+              textTransform: 'none',
+              borderRadius: 2,
+              px: 2,
+              py: 1.5,
+              '&:hover': {
+                background: '#F3F5F2',
+                color: COLORS.fontMain,
+              },
+            }}
+            fullWidth
+          >
+            Logout
+          </Button>
+        </Drawer>
+      )}
 
       {/* Main Content */}
       <Box
         sx={{
           flex: 1,
-          p: 4,
+          p: isMobile ? 2 : 4,
           display: 'flex',
           flexDirection: 'column',
-          gap: 3,
-          ml: '160px',
-          mt: '80px',
+          gap: isMobile ? 2 : 3,
+          ml: isMobile ? 0 : '160px',
+          mt: isMobile ? '80px' : '80px',
         }}
       >
         {/* Page Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            mb: 1,
+            gap: isMobile ? 2 : 2,
+          }}
+        >
           <Typography
             variant="h4"
-            sx={{ fontWeight: 700, color: COLORS.fontMain }}
+            sx={{
+              fontWeight: 700,
+              color: COLORS.fontMain,
+              fontSize: isMobile ? '1.5rem' : '2.125rem',
+            }}
           >
             Transaction History
           </Typography>
@@ -392,10 +683,13 @@ const Content = () => {
             variant="outlined"
             onClick={() => router.push('/duplicateddashboard')}
             sx={{
-              ml: 'auto',
+              ml: isMobile ? 0 : 'auto',
               color: COLORS.btnIconMain,
               borderColor: COLORS.btnIconMain,
               fontWeight: 600,
+              fontSize: isMobile ? 12 : 14,
+              px: isMobile ? 3 : 4,
+              py: isMobile ? 1 : 1.5,
               '&:hover': {
                 backgroundColor: COLORS.btnIconMain,
                 borderColor: COLORS.btnIconMain,
@@ -411,7 +705,8 @@ const Content = () => {
         <Box
           sx={{
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'center',
             gap: 2,
             mb: 2,
           }}
@@ -431,59 +726,75 @@ const Content = () => {
                 </InputAdornment>
               ),
               sx: {
-                fontSize: 12,
+                fontSize: isMobile ? 13 : 12,
                 borderRadius: 2,
                 background: '#fff',
-                height: 36,
+                height: isMobile ? 40 : 36,
               },
             }}
-            sx={{ flex: 1, maxWidth: 400 }}
+            sx={{ flex: 1, maxWidth: isMobile ? 'none' : 400 }}
           />
-          <TextField
-            select
-            size="small"
-            value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter(e.target.value);
-              setPage(1);
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <FilterList sx={{ fontSize: 16 }} />
-                </InputAdornment>
-              ),
-              sx: {
-                fontSize: 12,
-                borderRadius: 2,
-                background: '#fff',
-                height: 36,
-              },
-            }}
-            sx={{ width: 200 }}
-          >
-            {typeOptions.map((opt) => (
-              <MenuItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </MenuItem>
-            ))}
-          </TextField>
-          <IconButton
-            onClick={handleDownload}
+          <Box
             sx={{
-              color: COLORS.btnIconMain,
-              '&:hover': { backgroundColor: COLORS.bg },
+              display: 'flex',
+              gap: 2,
+              alignItems: 'center',
+              flexDirection: isMobile ? 'row' : 'row',
             }}
           >
-            <Download />
-          </IconButton>
+            <TextField
+              select
+              size="small"
+              value={typeFilter}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                setPage(1);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <FilterList sx={{ fontSize: 16 }} />
+                  </InputAdornment>
+                ),
+                sx: {
+                  fontSize: isMobile ? 13 : 12,
+                  borderRadius: 2,
+                  background: '#fff',
+                  height: isMobile ? 40 : 36,
+                },
+              }}
+              sx={{ width: isMobile ? 150 : 200 }}
+            >
+              {typeOptions.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <IconButton
+              onClick={handleDownload}
+              sx={{
+                color: COLORS.btnIconMain,
+                backgroundColor: '#fff',
+                border: '1px solid #E0E0E0',
+                width: isMobile ? 40 : 36,
+                height: isMobile ? 40 : 36,
+                '&:hover': {
+                  backgroundColor: COLORS.bg,
+                  borderColor: COLORS.btnIconMain,
+                },
+              }}
+            >
+              <Download />
+            </IconButton>
+          </Box>
         </Box>
 
         {/* Transaction Table */}
         <Paper
           sx={{
             borderRadius: 3,
-            px: 2,
+            px: isMobile ? 1 : 2,
             py: 1.5,
             background: '#fff',
             boxShadow: 1,
@@ -492,7 +803,7 @@ const Content = () => {
           {/* Table Header */}
           <Box
             sx={{
-              display: 'grid',
+              display: isMobile ? 'none' : 'grid',
               gridTemplateColumns: gridTemplate,
               py: 2,
               borderBottom: '1px solid #F0F0F0',
@@ -510,61 +821,169 @@ const Content = () => {
           </Box>
 
           {/* Transaction List */}
-          <Box sx={{ minHeight: 400 }}>
+          <Box
+            sx={{
+              minHeight: isMobile ? 300 : 400,
+              overflowX: isMobile ? 'auto' : 'visible',
+            }}
+          >
             {paginated.length === 0 ? (
               <Typography sx={{ p: 4, textAlign: 'center', color: '#B0B0B0' }}>
                 No transactions found.
               </Typography>
             ) : (
-              paginated.map((tx, idx) => (
-                <Box
-                  key={tx.id}
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: gridTemplate,
-                    alignItems: 'center',
-                    py: 1.5,
-                    borderBottom:
-                      idx === paginated.length - 1
-                        ? 'none'
-                        : '1px solid #F0F0F0',
-                    cursor: 'pointer',
-                    '&:hover': { background: '#f3eaff' },
-                    fontSize: 11,
-                  }}
-                >
-                  <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
-                    {(page - 1) * ROWS_PER_PAGE + idx + 1}
-                  </Box>
-                  <Box sx={{ textAlign: 'center' }}>{tx.id}</Box>
-                  <Box sx={{ textAlign: 'center' }}>{tx.type}</Box>
-                  <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
-                    {tx.user}
-                  </Box>
-                  <Box
-                    sx={{
-                      textAlign: 'center',
-                      fontWeight: 600,
-                      color: tx.positive ? COLORS.btnIcon2 : COLORS.fontSub,
-                    }}
-                  >
-                    {tx.amount}
-                  </Box>
-                  <Box sx={{ textAlign: 'center', color: '#B0B0B0' }}>
-                    {tx.date}
-                  </Box>
-                </Box>
-              ))
+              <>
+                {/* Desktop Table View */}
+                {!isMobile &&
+                  paginated.map((tx, idx) => (
+                    <Box
+                      key={tx.id}
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: gridTemplate,
+                        alignItems: 'center',
+                        py: 1.5,
+                        borderBottom:
+                          idx === paginated.length - 1
+                            ? 'none'
+                            : '1px solid #F0F0F0',
+                        cursor: 'pointer',
+                        '&:hover': { background: '#f3eaff' },
+                        fontSize: 11,
+                      }}
+                    >
+                      <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
+                        {(page - 1) * ROWS_PER_PAGE + idx + 1}
+                      </Box>
+                      <Box sx={{ textAlign: 'center' }}>{tx.id}</Box>
+                      <Box sx={{ textAlign: 'center' }}>{tx.type}</Box>
+                      <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
+                        {tx.user}
+                      </Box>
+                      <Box
+                        sx={{
+                          textAlign: 'center',
+                          fontWeight: 600,
+                          color: tx.positive ? COLORS.btnIcon2 : COLORS.fontSub,
+                        }}
+                      >
+                        {tx.amount}
+                      </Box>
+                      <Box sx={{ textAlign: 'center', color: '#B0B0B0' }}>
+                        {tx.date}
+                      </Box>
+                    </Box>
+                  ))}
+
+                {/* Mobile Card View */}
+                {isMobile &&
+                  paginated.map((tx, idx) => (
+                    <Box
+                      key={tx.id}
+                      sx={{
+                        border: '1px solid #F0F0F0',
+                        borderRadius: 2,
+                        p: 2,
+                        mb: 2,
+                        cursor: 'pointer',
+                        '&:hover': { background: '#f3eaff' },
+                        '&:last-child': { mb: 0 },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          mb: 1,
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: 12,
+                            color: COLORS.fontMain,
+                          }}
+                        >
+                          #{(page - 1) * ROWS_PER_PAGE + idx + 1}
+                        </Typography>
+                        <Typography sx={{ fontSize: 11, color: '#B0B0B0' }}>
+                          {tx.date}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          mb: 1,
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: 13,
+                            color: COLORS.fontMain,
+                          }}
+                        >
+                          {tx.user}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: 13,
+                            color: tx.positive
+                              ? COLORS.btnIcon2
+                              : COLORS.fontSub,
+                          }}
+                        >
+                          {tx.amount}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 11, color: '#6B6B6B' }}>
+                          {tx.type}
+                        </Typography>
+                        <Typography sx={{ fontSize: 11, color: '#B0B0B0' }}>
+                          ID: {tx.id}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ))}
+              </>
             )}
           </Box>
 
           {/* Pagination */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              mt: 2,
+              '& .MuiPagination-ul': {
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+              },
+            }}
+          >
             <Pagination
               count={pageCount}
               page={page}
               onChange={handlePageChange}
-              size="small"
+              size={isMobile ? 'small' : 'medium'}
+              sx={{
+                '& .MuiPaginationItem-root': {
+                  fontSize: isMobile ? 12 : 14,
+                  minWidth: isMobile ? 28 : 32,
+                  height: isMobile ? 28 : 32,
+                },
+              }}
             />
           </Box>
         </Paper>
