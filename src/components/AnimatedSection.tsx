@@ -13,6 +13,7 @@ interface AnimatedSectionProps {
   sx?: any;
 }
 
+
 export default function AnimatedSection({
   children,
   direction = 'up',
