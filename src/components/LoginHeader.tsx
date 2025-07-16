@@ -10,7 +10,7 @@ import {
   IconButton,
   Avatar,
 } from '@mui/material';
-import { Person } from '@mui/icons-material';
+import { Person, Settings as SettingsIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import ProfileForm from './ProfileForm';
@@ -81,27 +81,36 @@ export default function LoginHeader() {
             </Typography>
           </Box>
 
-          <IconButton
-            onClick={handleProfileClick}
-            sx={{
-              ml: 2,
-              p: 1,
-              '&:hover': {
-                backgroundColor: 'rgba(23, 22, 53, 0.04)',
-              },
-            }}
-          >
-            <Avatar
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton
+              color="inherit"
+              onClick={() => router.push('/multisign-settings')}
+              sx={{ p: 1 }}
+            >
+              <SettingsIcon sx={{ color: '#171635' }} />
+            </IconButton>
+            <IconButton
+              onClick={handleProfileClick}
               sx={{
-                width: 32,
-                height: 32,
-                backgroundColor: '#171635',
-                color: '#F8F6F6',
+                ml: 2,
+                p: 1,
+                '&:hover': {
+                  backgroundColor: 'rgba(23, 22, 53, 0.04)',
+                },
               }}
             >
-              <Person fontSize="small" />
-            </Avatar>
-          </IconButton>
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  backgroundColor: '#171635',
+                  color: '#F8F6F6',
+                }}
+              >
+                <Person fontSize="small" />
+              </Avatar>
+            </IconButton>
+          </Box>
         </Toolbar>
       </Container>
       <ProfileForm open={profileOpen} onClose={handleProfileClose} />

@@ -3,13 +3,16 @@
 import React from 'react';
 import LoginHeader from '../../components/LoginHeader';
 import Footer from '../../components/Footer';
-import DuplicatedDashboardContent from '../../pages/DuplicatedDashboard/Context';
+import Context from '../../pages/DuplicatedDashboard/Context';
+import { MultiSignProvider } from '../../pages/MultiSign-Settings/Content';
 
 export default function DuplicatedDashboardPage() {
   return (
     <>
       <LoginHeader />
-      <DuplicatedDashboardContent />
+      <MultiSignProvider>
+        <Context />
+      </MultiSignProvider>
       <Footer />
     </>
   );
