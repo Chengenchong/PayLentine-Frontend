@@ -11,6 +11,7 @@ import {
   Chip,
   TextField,
   FormHelperText,
+  CircularProgress,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -23,140 +24,6 @@ import {
   ArrowBack,
 } from '@mui/icons-material';
 
-// BIP39 word list (first 100 words for demo - in production you'd use the full 2048 word list)
-const BIP39_WORDS = [
-  'abandon',
-  'ability',
-  'able',
-  'about',
-  'above',
-  'absent',
-  'absorb',
-  'abstract',
-  'absurd',
-  'abuse',
-  'access',
-  'accident',
-  'account',
-  'accuse',
-  'achieve',
-  'acid',
-  'acoustic',
-  'acquire',
-  'across',
-  'act',
-  'action',
-  'actor',
-  'actress',
-  'actual',
-  'adapt',
-  'add',
-  'addict',
-  'address',
-  'adjust',
-  'admit',
-  'adult',
-  'advance',
-  'advice',
-  'aerobic',
-  'affair',
-  'afford',
-  'afraid',
-  'again',
-  'against',
-  'age',
-  'agent',
-  'agree',
-  'ahead',
-  'aim',
-  'air',
-  'airport',
-  'aisle',
-  'alarm',
-  'album',
-  'alcohol',
-  'alert',
-  'alien',
-  'all',
-  'alley',
-  'allow',
-  'almost',
-  'alone',
-  'alpha',
-  'already',
-  'also',
-  'alter',
-  'always',
-  'amateur',
-  'amazing',
-  'among',
-  'amount',
-  'amused',
-  'analyst',
-  'anchor',
-  'ancient',
-  'anger',
-  'angle',
-  'angry',
-  'animal',
-  'ankle',
-  'announce',
-  'annual',
-  'another',
-  'answer',
-  'antenna',
-  'antique',
-  'anxiety',
-  'any',
-  'apart',
-  'apology',
-  'appear',
-  'apple',
-  'approve',
-  'april',
-  'arcade',
-  'arch',
-  'arctic',
-  'area',
-  'arena',
-  'argue',
-  'arm',
-  'armed',
-  'armor',
-  'army',
-  'around',
-  'arrange',
-  'arrest',
-  'arrive',
-  'arrow',
-  'art',
-  'article',
-  'artist',
-  'artwork',
-  'ask',
-  'aspect',
-  'assault',
-  'asset',
-  'assist',
-  'assume',
-  'asthma',
-  'athlete',
-  'atom',
-  'attack',
-  'attend',
-  'attitude',
-];
-
-// Generate 12 random words from BIP39 word list
-const generateSeedPhrase = (): string[] => {
-  const seedPhrase: string[] = [];
-  for (let i = 0; i < 12; i++) {
-    const randomIndex = Math.floor(Math.random() * BIP39_WORDS.length);
-    seedPhrase.push(BIP39_WORDS[randomIndex]);
-  }
-  return seedPhrase;
-};
-
 export default function SeedPhraseContent() {
   const router = useRouter();
   const [seedPhrase, setSeedPhrase] = useState<string[]>([]);
@@ -168,11 +35,59 @@ export default function SeedPhraseContent() {
     {}
   );
   const [quizValidated, setQuizValidated] = useState(false);
+  const [seedPhraseError, setSeedPhraseError] = useState<string>('');
 
   useEffect(() => {
-    // Generate seed phrase on component mount
-    setSeedPhrase(generateSeedPhrase());
-  }, []);
+    // Only run if we don't already have a seed phrase
+    if (seedPhrase.length > 0) {
+      console.log('Seed phrase already set, skipping effect');
+      return;
+    }
+
+    // Get seed phrase from sessionStorage (set during registration)
+    let tempSeedPhrase = sessionStorage.getItem('tempSeedPhrase');
+    
+    // If not found in sessionStorage, check localStorage as backup
+    if (!tempSeedPhrase) {
+      tempSeedPhrase = localStorage.getItem('tempSeedPhrase');
+      console.log('Checking localStorage for tempSeedPhrase:', tempSeedPhrase);
+    }
+    
+    console.log('SeedPhrase component mounted');
+    console.log('tempSeedPhrase found:', tempSeedPhrase);
+    console.log('All sessionStorage keys:', Object.keys(sessionStorage));
+    console.log('All localStorage keys:', Object.keys(localStorage));
+    
+    if (tempSeedPhrase) {
+      // Convert string to array of words
+      const seedWords = tempSeedPhrase.trim().split(' ');
+      console.log('Seed words array:', seedWords, 'Length:', seedWords.length);
+      
+      if (seedWords.length === 12) {
+        setSeedPhrase(seedWords);
+        console.log('Seed phrase set successfully');
+        
+        // Clear the temporary storage for security ONLY after successful setting
+        setTimeout(() => {
+          sessionStorage.removeItem('tempSeedPhrase');
+          localStorage.removeItem('tempSeedPhrase');
+          console.log('Temporary storage cleared');
+        }, 1000);
+      } else {
+        setSeedPhraseError('Invalid seed phrase format received');
+        console.error('Invalid seed phrase length:', seedWords.length);
+      }
+    } else {
+      // No seed phrase found - user may have navigated here directly
+      console.error('No seed phrase found in sessionStorage or localStorage');
+      console.error('Current URL:', window.location.href);
+      setSeedPhraseError('No seed phrase found. Please complete registration first.');
+      // Redirect back to register after a delay
+      setTimeout(() => {
+        router.push('/register');
+      }, 3000);
+    }
+  }, [router, seedPhrase.length]);
 
   // Generate random hint indices when quiz starts
   useEffect(() => {
@@ -285,6 +200,113 @@ export default function SeedPhraseContent() {
 
     return !hasErrors;
   };
+
+  // Show error state if no seed phrase is available
+  if (seedPhraseError) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          background:
+            'linear-gradient(135deg, rgba(156, 137, 184, 0.8) 40%, rgba(77, 161, 169, 0.8) 86%)',
+          position: 'relative',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.1)',
+            zIndex: 1,
+          }}
+        />
+        <Container
+          maxWidth="lg"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            py: 4,
+            position: 'relative',
+            zIndex: 2,
+          }}
+        >
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 3, md: 5 },
+              maxWidth: 600,
+              width: '100%',
+              background: '#F8F6F6',
+              boxShadow: 'none',
+              border: '2px solid #e0e0e0',
+              borderRadius: '12px',
+              textAlign: 'center',
+            }}
+          >
+            <Warning sx={{ fontSize: 48, color: '#FFA630', mb: 2 }} />
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: '#171635',
+                mb: 2,
+              }}
+            >
+              Seed Phrase Not Available
+            </Typography>
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {seedPhraseError}
+            </Alert>
+            <Typography variant="body1" sx={{ color: '#666', mb: 3 }}>
+              Redirecting you to the registration page...
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => router.push('/register')}
+              sx={{
+                background: 'linear-gradient(90deg, #9C89B8, #4DA1A9)',
+                fontWeight: 600,
+                textTransform: 'none',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #856DA9, #41898F)',
+                },
+              }}
+            >
+              Go to Registration
+            </Button>
+          </Paper>
+        </Container>
+      </Box>
+    );
+  }
+
+  // Show loading state while seed phrase is being processed
+  if (seedPhrase.length === 0) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background:
+            'linear-gradient(135deg, rgba(156, 137, 184, 0.8) 40%, rgba(77, 161, 169, 0.8) 86%)',
+        }}
+      >
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress sx={{ color: '#4DA1A9', mb: 2 }} />
+          <Typography variant="body1" sx={{ color: 'white' }}>
+            Loading your recovery phrase...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
 
   if (showQuiz) {
     return (

@@ -118,10 +118,18 @@ export default function RegisterContent() {
           // phoneNumber is optional, so we can include username as a display name or skip it
         });
 
-        if (response.success) {
+        if (response.success && response.data?.seedPhrase) {
           console.log('Registration successful:', response);
-          // Redirect to seed phrase page
-          router.push('/seedphrase');
+          
+          // Store the seed phrase temporarily in sessionStorage for the seedphrase page
+          sessionStorage.setItem('tempSeedPhrase', response.data.seedPhrase);
+          // Also store in localStorage as backup
+          localStorage.setItem('tempSeedPhrase', response.data.seedPhrase);
+          
+          // Small delay to ensure storage is set before navigation
+          setTimeout(() => {
+            router.push('/seedphrase');
+          }, 100);
         }
       } catch (error) {
         console.error('Registration failed:', error);
