@@ -13,6 +13,12 @@ import {
   IconButton,
   Container,
   Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 
 import {
@@ -28,6 +34,7 @@ import {
   Email,
   Badge,
   CreditCard,
+  AccountBalance,
   ArrowBack,
 } from '@mui/icons-material';
 
@@ -51,6 +58,18 @@ interface UserProfile {
     documentNumber: string;
     verificationDate?: string;
     expiryDate?: string;
+  };
+  multiEKyc: {
+    verifications: Array<{
+      id: string;
+      bankName: string;
+      status: 'verified' | 'pending' | 'rejected';
+      verificationDate?: string;
+      accountVerified: boolean;
+      accountType: 'Bank' | 'E-Wallet' | 'Universities';
+    }>;
+    overallStatus: 'verified' | 'partial' | 'not_verified';
+    totalVerified: number;
   };
   employment: {
     employer: string;
@@ -85,6 +104,36 @@ const mockUserProfile: UserProfile = {
     documentNumber: 'US123456789',
     verificationDate: '2024-01-15',
     expiryDate: '2034-01-15',
+  },
+  multiEKyc: {
+    verifications: [
+      {
+        id: 'VER001',
+        bankName: 'Chase Bank',
+        status: 'verified',
+        verificationDate: '2024-01-20',
+        accountVerified: true,
+        accountType: 'Bank',
+      },
+      {
+        id: 'VER002',
+        bankName: 'PayPal',
+        status: 'verified',
+        verificationDate: '2024-02-15',
+        accountVerified: true,
+        accountType: 'E-Wallet',
+      },
+      {
+        id: 'VER003',
+        bankName: 'MIT University',
+        status: 'verified',
+        verificationDate: '2024-03-08',
+        accountVerified: true,
+        accountType: 'Universities',
+      },
+    ],
+    overallStatus: 'verified',
+    totalVerified: 3,
   },
   employment: {
     employer: 'Tech Solutions Inc.',
@@ -160,6 +209,19 @@ export default function ProfileContent() {
       case 'pending':
         return 'warning';
       case 'rejected':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getMultiEKYCStatusColor = (status: string) => {
+    switch (status) {
+      case 'verified':
+        return 'success';
+      case 'partial':
+        return 'warning';
+      case 'not_verified':
         return 'error';
       default:
         return 'default';
@@ -476,6 +538,197 @@ export default function ProfileContent() {
                     </Box>
                   )}
                 </Box>
+              </Box>
+
+              <Divider />
+
+              {/* Multi E-KYC Verification */}
+              <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#171635' }}>
+                      Multi E-KYC Verification
+                    </Typography>
+                    <Chip
+                      label={profile.multiEKyc.overallStatus === 'verified' ? 'E-KYC VERIFIED' : 
+                             profile.multiEKyc.overallStatus === 'partial' ? 'PARTIALLY VERIFIED' : 'NOT VERIFIED'}
+                      color={getMultiEKYCStatusColor(profile.multiEKyc.overallStatus) as any}
+                      size="small"
+                      icon={<AccountBalance />}
+                    />
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<AccountBalance />}
+                    sx={{
+                      color: '#171635',
+                      borderColor: '#171635',
+                      textTransform: 'none',
+                      '&:hover': {
+                        bgcolor: 'rgba(23, 22, 53, 0.04)',
+                      },
+                    }}
+                  >
+                    Add New Verification
+                  </Button>
+                </Box>
+                
+                {/* Verifications Table */}
+                <Box sx={{ width: '100%', overflowX: 'auto' }}>
+                  <TableContainer 
+                    component={Paper} 
+                    sx={{ 
+                      mb: 2,
+                      border: '1px solid #e0e0e0',
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      width: '100%'
+                    }}
+                  >
+                    <Table size="medium" sx={{ minWidth: 620 }}>
+                      <TableHead>
+                        <TableRow sx={{ 
+                          bgcolor: '#f8f9fa',
+                          '& .MuiTableCell-head': {
+                            fontWeight: 700,
+                            fontSize: '0.875rem',
+                            color: '#171635',
+                            borderBottom: '2px solid #e0e0e0',
+                            padding: '16px 12px',
+                            whiteSpace: 'nowrap'
+                          }
+                        }}>
+                          <TableCell sx={{ minWidth: 220 }}>Institution</TableCell>
+                          <TableCell align="center" sx={{ minWidth: 140 }}>Verification Status</TableCell>
+                          <TableCell align="center" sx={{ minWidth: 140 }}>Account Type</TableCell>
+                          <TableCell align="center" sx={{ minWidth: 120 }}>Verified Date</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {profile.multiEKyc.verifications
+                          .filter(verification => verification.status === 'verified')
+                          .map((verification, index) => (
+                          <TableRow
+                            key={verification.id}
+                            sx={{
+                              '&:nth-of-type(odd)': { bgcolor: '#fafafa' },
+                              '&:hover': { 
+                                bgcolor: '#f0f7ff',
+                                transform: 'scale(1.001)',
+                                transition: 'all 0.2s ease',
+                              },
+                              borderLeft: '4px solid #4caf50',
+                              '& .MuiTableCell-root': {
+                                padding: '16px 12px',
+                                borderBottom: '1px solid #e0e0e0'
+                              }
+                            }}
+                          >
+                            <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Box 
+                                  sx={{ 
+                                    width: 40, 
+                                    height: 40, 
+                                    borderRadius: '50%', 
+                                    bgcolor: '#e8f5e8',
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    flexShrink: 0
+                                  }}
+                                >
+                                  <AccountBalance sx={{ 
+                                    fontSize: 22, 
+                                    color: '#4caf50'
+                                  }} />
+                                </Box>
+                                <Box sx={{ minWidth: 0, flex: 1 }}>
+                                  <Typography variant="body1" sx={{ 
+                                    fontWeight: 600, 
+                                    color: '#171635',
+                                    fontSize: '0.95rem',
+                                    lineHeight: 1.3,
+                                    mb: 0.5
+                                  }}>
+                                    {verification.bankName}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ 
+                                    color: '#666',
+                                    fontSize: '0.8rem',
+                                    display: 'block'
+                                  }}>
+                                    ID: {verification.id}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label="VERIFIED"
+                                color="success"
+                                size="medium"
+                                sx={{ 
+                                  fontWeight: 600,
+                                  minWidth: 100,
+                                  fontSize: '0.8rem',
+                                  height: 32
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Typography variant="body1" sx={{ 
+                                fontWeight: 500,
+                                color: '#171635',
+                                fontSize: '0.95rem'
+                              }}>
+                                {verification.accountType}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Typography variant="body1" sx={{ 
+                                color: '#171635',
+                                fontSize: '0.95rem',
+                                fontWeight: 400
+                              }}>
+                                {verification.verificationDate}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+
+                {/* Summary Information */}
+                {profile.multiEKyc.totalVerified > 0 && (
+                  <Box sx={{ 
+                    p: 2, 
+                    borderRadius: 1, 
+                    backgroundColor: '#e8f5e8', 
+                    border: '1px solid #4caf50' 
+                  }}>
+                    <Typography variant="body2" sx={{ 
+                      color: '#2e7d32', 
+                      fontWeight: 600, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 1,
+                      mb: 1
+                    }}>
+                      <VerifiedUser fontSize="small" />
+                      Multi E-KYC Verification Confirmed
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#2e7d32' }}>
+                      This individual has been verified by {profile.multiEKyc.totalVerified} financial institution{profile.multiEKyc.totalVerified > 1 ? 's' : ''} through 
+                      their Multi E-KYC processes, providing enhanced identity assurance and compliance with banking regulations.
+                      {profile.multiEKyc.totalVerified > 1 && ' Multiple institution verifications provide additional security and trust.'}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
 
               <Divider />
