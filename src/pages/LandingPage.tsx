@@ -66,29 +66,33 @@ const features = [
 ];
 
 const bubbleColors = ['#9C89B8', '#4DA1A9', '#E573C0', '#FFD600', '#7FC7FF'];
-const bubbles: {
-  size: number;
-  left: string;
-  top: string;
-  delay: string;
-  duration: string;
-  opacity: number;
-  color: string;
-}[] = Array.from({ length: 10 }).map((_, i) => ({
-  size: 80 + Math.random() * 80,
-  left: `${5 + Math.random() * 90}%`,
-  top: `${5 + Math.random() * 80}%`,
-  delay: `${Math.random() * 2}s`,
-  duration: `${2.5 + Math.random() * 2}s`,
-  opacity: 0.13 + Math.random() * 0.09,
-  color: bubbleColors[i % bubbleColors.length],
-}));
 
 export default function Hero() {
   const [isVisible, setIsVisible] = useState(false);
+  const [bubbles, setBubbles] = useState<{
+    size: number;
+    left: string;
+    top: string;
+    delay: string;
+    duration: string;
+    opacity: number;
+    color: string;
+  }[]>([]);
   const router = useRouter();
 
   useEffect(() => {
+    // Generate bubbles on client side to avoid hydration mismatch
+    const generatedBubbles = Array.from({ length: 10 }).map((_, i) => ({
+      size: 80 + Math.random() * 80,
+      left: `${5 + Math.random() * 90}%`,
+      top: `${5 + Math.random() * 80}%`,
+      delay: `${Math.random() * 2}s`,
+      duration: `${2.5 + Math.random() * 2}s`,
+      opacity: 0.13 + Math.random() * 0.09,
+      color: bubbleColors[i % bubbleColors.length],
+    }));
+    setBubbles(generatedBubbles);
+
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, 150);
