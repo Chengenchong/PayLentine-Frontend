@@ -28,7 +28,6 @@ import {
   InputLabel,
   RadioGroup,
   Radio,
-  useTheme,
   alpha,
   IconButton,
   Divider,
@@ -76,8 +75,11 @@ import {
   ViewCompact as ViewCompactIcon,
   Dashboard as DashboardIcon,
   NotificationImportant as NotificationImportantIcon,
+  Lock as LockIcon,
+  LockOpen as LockOpenIcon,
 } from '@mui/icons-material';
 import { useTheme as useAppTheme } from '../../components/ThemeProvider';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
 
 // --- MultiSign Context/Provider/Hook ---
@@ -160,7 +162,7 @@ const PreferencesContent = () => {
   const [preferredTimeSlot, setPreferredTimeSlot] = useState('morning');
   const [autoReorder, setAutoReorder] = useState(true);
   const { mode, setTheme } = useAppTheme();
-  const theme = useTheme();
+  const theme = useMuiTheme();
 
   const handleThemeChange = (isDark: boolean) => {
     setTheme(isDark ? 'dark' : 'light');
@@ -439,7 +441,7 @@ const NotificationsContent = () => {
 
 const CustomContent = () => {
   const { mode, setTheme } = useAppTheme();
-  const theme = useTheme();
+  const theme = useMuiTheme();
   const [fontSize, setFontSize] = useState(16);
   const [compactMode, setCompactMode] = useState(false);
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
@@ -613,6 +615,13 @@ const SecurityContent = () => {
   const [biometric, setBiometric] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [loginAlerts, setLoginAlerts] = useState(true);
+  
+  // New state for confirmation and locking
+  const [isPartnerConfirmed, setIsPartnerConfirmed] = useState(false);
+  const [showUnlockDialog, setShowUnlockDialog] = useState(false);
+  const [unlockSeedPhrase, setUnlockSeedPhrase] = useState<string[]>(Array(12).fill(''));
+  const [unlockSeedError, setUnlockSeedError] = useState('');
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
 
   const handleToggle = () => {
     if (enabled) {
@@ -637,10 +646,47 @@ const SecurityContent = () => {
     setShowSeedDialog(false);
     setSeedPhrase(Array(12).fill(''));
     setSeedError('');
+    setIsPartnerConfirmed(false); // Reset confirmation when disabling
+  };
+
+  // New handler functions for confirmation and unlocking
+  const handleConfirmPartner = () => {
+    if (enabled && userB && threshold) {
+      setShowReviewDialog(true);
+    }
+  };
+
+  const handleFinalConfirm = () => {
+    setIsPartnerConfirmed(true);
+    setShowReviewDialog(false);
+  };
+
+  const handleUnlockForModification = () => {
+    setShowUnlockDialog(true);
+  };
+
+  const handleUnlockSeedChange = (idx: number, value: string) => {
+    const updated = [...unlockSeedPhrase];
+    updated[idx] = value;
+    setUnlockSeedPhrase(updated);
+  };
+
+  const handleUnlockConfirm = () => {
+    if (unlockSeedPhrase.some((w) => !w.trim())) {
+      setUnlockSeedError('Please enter all 12 words.');
+      return;
+    }
+    // In a real app, you would verify the seed phrase here
+    setIsPartnerConfirmed(false);
+    setShowUnlockDialog(false);
+    setUnlockSeedPhrase(Array(12).fill(''));
+    setUnlockSeedError('');
   };
 
   const handleThresholdChange = (value: number) => {
-    setThreshold(value);
+    if (!isPartnerConfirmed) {
+      setThreshold(value);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -722,7 +768,7 @@ const SecurityContent = () => {
                     min={100}
                     max={10000}
                     step={100}
-                    disabled={!enabled}
+                    disabled={!enabled || isPartnerConfirmed}
                     valueLabelDisplay="auto"
                     valueLabelFormat={(value) => formatCurrency(value)}
                     marks={[
@@ -753,7 +799,7 @@ const SecurityContent = () => {
                     onChange={(e) => handleThresholdChange(Number(e.target.value))}
                     size="small"
                     fullWidth
-                    disabled={!enabled}
+                    disabled={!enabled || isPartnerConfirmed}
                     inputProps={{
                       min: 100,
                       max: 10000,
@@ -770,25 +816,77 @@ const SecurityContent = () => {
                 <Typography variant="body1" fontWeight={600} gutterBottom>
                   Multi-Signature Partner
                 </Typography>
-                <Autocomplete
-                  options={contacts}
-                  getOptionLabel={(option) => `${option.name} (${option.id})`}
-                  value={userB}
-                  onChange={(_, val) => setUserB(val)}
-                  renderInput={(params) => (
-                    <TextField 
-                      {...params} 
-                      label="Select trusted contact" 
-                      size="small"
-                      helperText="Choose a trusted contact who will approve transactions above the threshold"
-                    />
-                  )}
-                  disabled={!enabled}
-                  isOptionEqualToValue={(option, value) => option.id === value.id}
-                />
+                
+                {/* Partner Selection */}
+                <Box sx={{ mb: 2 }}>
+                  <Autocomplete
+                    options={contacts}
+                    getOptionLabel={(option) => `${option.name} (${option.id})`}
+                    value={userB}
+                    onChange={(_, val) => !isPartnerConfirmed && setUserB(val)}
+                    renderInput={(params) => (
+                      <TextField 
+                        {...params} 
+                        label="Select trusted contact" 
+                        size="small"
+                        helperText={isPartnerConfirmed ? "Partner selection is locked. Use unlock button to modify." : "Choose a trusted contact who will approve transactions above the threshold"}
+                      />
+                    )}
+                    disabled={!enabled || isPartnerConfirmed}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                  />
+                </Box>
+                
+                {/* Confirmation Section */}
+                {enabled && userB && !isPartnerConfirmed && (
+                  <Box sx={{ mb: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={handleConfirmPartner}
+                      sx={{ mr: 2 }}
+                    >
+                      Confirm Multi-Signature Setup
+                    </Button>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      Once confirmed, you'll need your seed phrase to modify these settings
+                    </Typography>
+                  </Box>
+                )}
+                
+                {/* Locked Status */}
+                {isPartnerConfirmed && (
+                  <Box sx={{ mb: 2 }}>
+                    <Box sx={{ 
+                      p: 2, 
+                      backgroundColor: alpha('#4CAF50', 0.1),
+                      borderRadius: 2,
+                      border: `1px solid ${alpha('#4CAF50', 0.3)}`,
+                      mb: 2
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <LockIcon sx={{ mr: 1, color: '#4CAF50' }} />
+                          <Typography variant="body2" sx={{ color: '#2E7D32' }}>
+                            🔒 Multi-signature setup is locked and secured
+                          </Typography>
+                        </Box>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          color="warning"
+                          onClick={handleUnlockForModification}
+                          startIcon={<LockOpenIcon />}
+                        >
+                          Unlock to Modify
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Box>
+                )}
               </Box>
               
-              {enabled && userB && (
+              {enabled && userB && isPartnerConfirmed && (
                 <Box sx={{ 
                   p: 2, 
                   backgroundColor: alpha('#2196F3', 0.1),
@@ -896,6 +994,236 @@ const SecurityContent = () => {
           <Button onClick={() => setShowSeedDialog(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleSeedConfirm} color="error">
             Disable Multi-Signature
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Unlock Multi-Signature Dialog */}
+      <Dialog open={showUnlockDialog} onClose={() => setShowUnlockDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Unlock Multi-Signature Settings</Typography>
+            <IconButton onClick={() => setShowUnlockDialog(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography gutterBottom>
+            Please enter your 12-word seed phrase to unlock and modify your multi-signature settings.
+          </Typography>
+          <Box sx={{ 
+            p: 2, 
+            backgroundColor: alpha('#FF9800', 0.1),
+            borderRadius: 2,
+            border: `1px solid ${alpha('#FF9800', 0.3)}`,
+            mb: 3
+          }}>
+            <Typography variant="body2" sx={{ color: '#F57C00' }}>
+              ⚠️ This will temporarily unlock your multi-signature settings for modification. Make sure you're in a secure environment.
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+            {unlockSeedPhrase.map((word, idx) => (
+              <Box key={idx} sx={{ width: 'calc(33.33% - 8px)' }}>
+                <TextField
+                  value={word}
+                  onChange={(e) => handleUnlockSeedChange(idx, e.target.value)}
+                  size="small"
+                  placeholder={`Word ${idx + 1}`}
+                  fullWidth
+                />
+              </Box>
+            ))}
+          </Box>
+          {unlockSeedError && (
+            <Typography color="error" sx={{ mt: 1 }}>{unlockSeedError}</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowUnlockDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleUnlockConfirm} color="warning">
+            Unlock Settings
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Review Multi-Signature Setup Dialog */}
+      <Dialog open={showReviewDialog} onClose={() => setShowReviewDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Review Multi-Signature Setup</Typography>
+            <IconButton onClick={() => setShowReviewDialog(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" gutterBottom sx={{ mb: 3 }}>
+            Please review your multi-signature configuration before confirming. Once confirmed, you'll need your seed phrase to make any changes.
+          </Typography>
+          
+          <Grid container spacing={3}>
+            {/* Configuration Summary */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Card variant="outlined" sx={{ p: 3 }}>
+                <Typography variant="h6" fontWeight={600} gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                  <ShieldIcon sx={{ mr: 1, color: 'primary.main' }} />
+                  Security Configuration
+                </Typography>
+                
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Multi-Signature Status
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography variant="body1" fontWeight={600}>
+                      {enabled ? 'Enabled' : 'Disabled'}
+                    </Typography>
+                    <Chip 
+                      label={enabled ? 'Active' : 'Inactive'} 
+                      color={enabled ? 'success' : 'default'}
+                      size="small" 
+                      sx={{ ml: 1 }}
+                    />
+                  </Box>
+                </Box>
+
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Transaction Threshold
+                  </Typography>
+                  <Typography variant="h6" fontWeight={600} color="primary.main">
+                    {formatCurrency(threshold)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Transactions above this amount will require approval
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Selected Partner
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                    <Avatar sx={{ width: 32, height: 32, mr: 1, bgcolor: 'primary.main' }}>
+                      {userB?.name.charAt(0)}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="body1" fontWeight={600}>
+                        {userB?.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        ID: {userB?.id}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Card>
+            </Grid>
+
+            {/* Security Notice */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Card variant="outlined" sx={{ p: 3 }}>
+                <Typography variant="h6" fontWeight={600} gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                  <LockIcon sx={{ mr: 1, color: 'warning.main' }} />
+                  Important Security Notice
+                </Typography>
+                
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" gutterBottom>
+                    <strong>What happens after confirmation:</strong>
+                  </Typography>
+                  <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                    <li>
+                      <Typography variant="body2">
+                        Your multi-signature settings will be locked
+                      </Typography>
+                    </li>
+                    <li>
+                      <Typography variant="body2">
+                        You'll need your 12-word seed phrase to make changes
+                      </Typography>
+                    </li>
+                    <li>
+                      <Typography variant="body2">
+                        All transactions above {formatCurrency(threshold)} will require {userB?.name}'s approval
+                      </Typography>
+                    </li>
+                  </Box>
+                </Box>
+
+                <Box sx={{ 
+                  p: 2, 
+                  backgroundColor: alpha('#FF9800', 0.1),
+                  borderRadius: 2,
+                  border: `1px solid ${alpha('#FF9800', 0.3)}`
+                }}>
+                  <Typography variant="body2" sx={{ color: '#F57C00' }}>
+                    ⚠️ <strong>Make sure you have your seed phrase safely stored!</strong> You'll need it to unlock these settings in the future.
+                  </Typography>
+                </Box>
+              </Card>
+            </Grid>
+
+            {/* Transaction Flow Preview */}
+            <Grid size={{ xs: 12 }}>
+              <Card variant="outlined" sx={{ p: 3 }}>
+                <Typography variant="h6" fontWeight={600} gutterBottom>
+                  How Multi-Signature Works
+                </Typography>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                  <Box sx={{ 
+                    p: 2, 
+                    borderRadius: 2, 
+                    backgroundColor: alpha('#4CAF50', 0.1),
+                    border: `1px solid ${alpha('#4CAF50', 0.3)}`,
+                    flex: 1,
+                    minWidth: 200
+                  }}>
+                    <Typography variant="body2" fontWeight={600} color="#2E7D32">
+                      Transactions ≤ {formatCurrency(threshold)}
+                    </Typography>
+                    <Typography variant="body2">
+                      ✅ Proceed automatically (no approval needed)
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ 
+                    p: 2, 
+                    borderRadius: 2, 
+                    backgroundColor: alpha('#2196F3', 0.1),
+                    border: `1px solid ${alpha('#2196F3', 0.3)}`,
+                    flex: 1,
+                    minWidth: 200
+                  }}>
+                    <Typography variant="body2" fontWeight={600} color="#1976D2">
+                      Transactions {'>'}  {formatCurrency(threshold)}
+                    </Typography>
+                    <Typography variant="body2">
+                      🔒 Requires approval from {userB?.name}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Card>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={() => setShowReviewDialog(false)}>
+            Cancel
+          </Button>
+          <Button variant="outlined" onClick={() => setShowReviewDialog(false)}>
+            Go Back to Edit
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleFinalConfirm} 
+            color="primary"
+            sx={{ ml: 1 }}
+          >
+            Confirm & Lock Settings
           </Button>
         </DialogActions>
       </Dialog>
@@ -1097,7 +1425,7 @@ const SettingsContent = ({ activeSection }: { activeSection: string }) => {
 
 export default function MultiSignSettings() {
   const [activeSection, setActiveSection] = useState('preferences');
-  const theme = useTheme();
+  const theme = useMuiTheme();
   const router = useRouter();
 
   const handleSaveSettings = () => {

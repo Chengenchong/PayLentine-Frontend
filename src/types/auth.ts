@@ -24,6 +24,7 @@ export interface RegisterResponse {
       updatedAt?: string;
     };
     token: string;
+    seedPhrase: string;
   };
   timestamp?: string;
 }

@@ -25,17 +25,18 @@ import {
   Google,
   Facebook,
 } from '@mui/icons-material';
+import { useLogin } from '../../hooks/useAuth';
 
 export default function SignInContent() {
   const router = useRouter();
+  const { login, isLoading, error: loginError } = useLogin();
+  
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [loginError, setLoginError] = useState('');
 
   const handleInputChange =
     (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,7 +51,6 @@ export default function SignInContent() {
           [field]: '',
         });
       }
-      setLoginError('');
     };
 
   const validateForm = () => {
@@ -78,22 +78,20 @@ export default function SignInContent() {
       return;
     }
 
-    setIsLoading(true);
-    setLoginError('');
-
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await login({
+        email: formData.email,
+        password: formData.password,
+      });
 
-      // Here you would typically make an API call to your backend
-      console.log('Sign in attempt:', formData);
-
-      // Redirect to dashboard on success
-      router.push('/duplicateddashboard');
+      if (response.success) {
+        console.log('Login successful:', response);
+        // Redirect to dashboard on success
+        router.push('/duplicateddashboard');
+      }
     } catch (error) {
-      setLoginError('Invalid email or password. Please try again.');
-    } finally {
-      setIsLoading(false);
+      console.error('Login failed:', error);
+      // Error is already handled by the useLogin hook
     }
   };
 
