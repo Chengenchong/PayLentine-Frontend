@@ -106,8 +106,8 @@ export default function RegisterContent() {
     if (validateForm()) {
       console.log('Form submitted:', formData);
       // Here you would typically send the data to your backend
-      // Redirect to pre-dashboard animation
-      router.push('/pre-dashboard');
+      // Redirect to seed phrase page
+      router.push('/seedphrase');
     }
   };
 
