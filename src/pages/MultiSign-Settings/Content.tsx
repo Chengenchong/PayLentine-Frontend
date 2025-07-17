@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, createContext, useContext, ReactNode } from 'react';
+import React, { useState, createContext, useContext, ReactNode, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -1555,4 +1555,4 @@ export default function MultiSignSettings() {
       </Box>
     </Box>
   );
-} 
+}
