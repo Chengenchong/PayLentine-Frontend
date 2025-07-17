@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { Person, Settings as SettingsIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
+import MultiSignNotifications from './MultiSignNotifications';
 
 export default function LoginHeader() {
   const router = useRouter();
@@ -75,6 +76,9 @@ export default function LoginHeader() {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Multi-Signature Notifications */}
+            <MultiSignNotifications />
+            
             <IconButton
               color="inherit"
               onClick={() => router.push('/multisign-settings')}
