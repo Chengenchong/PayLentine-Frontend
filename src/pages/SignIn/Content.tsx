@@ -150,6 +150,59 @@ export default function SignInContent() {
             enjoy seamless peer-to-peer currency exchanges with the best rates
             in the market.
           </Typography>
+
+          <Box sx={{ textAlign: 'left', mb: 2 }}>
+            <Typography
+              variant="body1"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mb: 2.5,
+                fontSize: '1.1rem',
+              }}
+            >
+              ⚡ Lightning-fast currency matching
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mb: 2.5,
+                fontSize: '1.1rem',
+              }}
+            >
+              💰 Save up to 80% on exchange fees
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mb: 2.5,
+                fontSize: '1.1rem',
+              }}
+            >
+              🌍 Support for 150+ global currencies
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mb: 2.5,
+                fontSize: '1.1rem',
+              }}
+            >
+              🔒 Bank-level security & encryption
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ display: 'flex', alignItems: 'center', fontSize: '1.1rem' }}
+            >
+              🎁 Zero fees for your first 3 exchanges
+            </Typography>
+          </Box>
         </Box>
       </Box>
 
