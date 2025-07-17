@@ -219,17 +219,41 @@ export default function SeedPhraseContent() {
   };
 
   const handleInputChange = (index: number, value: string) => {
-    setUserInputs((prev) => ({
-      ...prev,
-      [index]: value.toLowerCase().trim(),
-    }));
+    // Check if the pasted value contains multiple words (full seed phrase)
+    const words = value.trim().split(/\s+/);
 
-    // Clear error when user starts typing
-    if (inputErrors[index]) {
-      setInputErrors((prev) => ({
+    if (words.length === 12) {
+      // This looks like a full seed phrase being pasted
+      const newInputs: { [key: number]: string } = {};
+
+      // Fill all non-hint positions with the corresponding words
+      for (let i = 0; i < 12; i++) {
+        if (!hintIndices.includes(i)) {
+          newInputs[i] = words[i].toLowerCase().trim();
+        }
+      }
+
+      setUserInputs((prev) => ({
         ...prev,
-        [index]: false,
+        ...newInputs,
       }));
+
+      // Clear any existing errors
+      setInputErrors({});
+    } else {
+      // Single word input, handle normally
+      setUserInputs((prev) => ({
+        ...prev,
+        [index]: value.toLowerCase().trim(),
+      }));
+
+      // Clear error when user starts typing
+      if (inputErrors[index]) {
+        setInputErrors((prev) => ({
+          ...prev,
+          [index]: false,
+        }));
+      }
     }
   };
 
