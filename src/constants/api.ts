@@ -18,6 +18,19 @@ export const API_ENDPOINTS = {
     PROFILE: '/auth/profile',
     CHANGE_PASSWORD: '/auth/change-password',
   },
+  MULTISIG: {
+    SETTINGS: '/multisig/settings',
+    CHECK_REQUIRED: '/multisig/check-required',
+    CREATE_PENDING: '/multisig/create-pending',
+    PENDING_APPROVALS: '/multisig/pending-approvals',
+    INITIATED_TRANSACTIONS: '/multisig/initiated-transactions',
+    TRANSACTION_DETAILS: '/multisig/transaction',
+    APPROVE: '/multisig/transaction',
+    REJECT: '/multisig/transaction',
+    CANCEL: '/multisig/transaction',
+    STATS: '/multisig/stats',
+    VALIDATE_SEED: '/multisig/validate-seed-phrase',
+  },
 } as const;
 
 // Request timeout in milliseconds

@@ -81,9 +81,16 @@ import {
 import { useTheme as useAppTheme } from '../../components/ThemeProvider';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../../hooks/useAuth';
+import { 
+  getMultiSignSettings, 
+  updateMultiSignSettings, 
+  validateSeedPhrase 
+} from '../../services/multisig';
+import type { MultiSignSettings as BackendMultiSignSettings } from '../../types/multisig';
 
 // --- MultiSign Context/Provider/Hook ---
-export type Contact = { id: string; name: string };
+export type Contact = { id: string; name: string; email?: string; };
 
 interface MultiSignSettings {
   enabled: boolean;
@@ -92,18 +99,111 @@ interface MultiSignSettings {
   setEnabled: (enabled: boolean) => void;
   setThreshold: (threshold: number) => void;
   setUserB: (user: Contact | null) => void;
+  saveToBackend: () => Promise<void>;
+  loadFromBackend: () => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const MultiSignContext = createContext<MultiSignSettings | undefined>(undefined);
 
 export const MultiSignProvider = ({ children }: { children: ReactNode }) => {
-  const [enabled, setEnabled] = useState(true);
+  const [enabled, setEnabled] = useState(false);
   const [threshold, setThreshold] = useState(1000);
   const [userB, setUserB] = useState<Contact | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
+
+  // Load settings from backend
+  const loadFromBackend = async () => {
+    if (!isAuthenticated) return;
+    
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await getMultiSignSettings();
+      
+      // Handle different response formats
+      let settings = null;
+      if (response.success && response.data) {
+        settings = response.data;
+      } else if (response.settings) {
+        settings = response.settings;
+      } else if (response.isEnabled !== undefined) {
+        settings = response;
+      }
+      
+      if (settings) {
+        setEnabled(settings.isEnabled);
+        setThreshold(settings.thresholdAmount || 1000);
+        if (settings.partnerEmail) {
+          setUserB({
+            id: settings.partnerEmail,
+            name: settings.partnerName || settings.partnerEmail,
+            email: settings.partnerEmail,
+          });
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load multi-signature settings');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Save settings to backend
+  const saveToBackend = async () => {
+    if (!isAuthenticated) return;
+    
+    setIsLoading(true);
+    setError(null);
+    try {
+      const settings: Partial<BackendMultiSignSettings> = {
+        isEnabled: enabled,
+        thresholdAmount: threshold,
+        partnerEmail: userB?.email || userB?.id,
+        partnerName: userB?.name,
+      };
+      
+      const response = await updateMultiSignSettings(settings);
+      // Check if the response indicates success
+      if (response.message && response.message.includes('successfully')) {
+        // Success - the backend returns a message instead of success flag
+        return;
+      }
+      
+      if (!response.success) {
+        const errorMessage = response.errors?.[0]?.message || 'Failed to save settings';
+        throw new Error(errorMessage);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to save multi-signature settings');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load settings on mount
+  useEffect(() => {
+    loadFromBackend();
+  }, [isAuthenticated]);
 
   return (
     <MultiSignContext.Provider
-      value={{ enabled, threshold, userB, setEnabled, setThreshold, setUserB }}
+      value={{ 
+        enabled, 
+        threshold, 
+        userB, 
+        setEnabled, 
+        setThreshold, 
+        setUserB,
+        saveToBackend,
+        loadFromBackend,
+        isLoading,
+        error
+      }}
     >
       {children}
     </MultiSignContext.Provider>
@@ -118,11 +218,11 @@ export function useMultiSign() {
 
 // Dummy contacts
 const contacts = [
-  { id: 'C001', name: 'Bruno Hoffman' },
-  { id: 'C002', name: 'Vanessa Saldia' },
-  { id: 'C003', name: 'Chad Kenley' },
-  { id: 'C004', name: 'Manuel Rovira' },
-  { id: 'C005', name: 'Alice Smith' },
+  { id: 'bruno.hoffman@example.com', name: 'Bruno Hoffman', email: 'bruno.hoffman@example.com' },
+  { id: 'vanessa.saldia@example.com', name: 'Vanessa Saldia', email: 'vanessa.saldia@example.com' },
+  { id: 'chad.kenley@example.com', name: 'Chad Kenley', email: 'chad.kenley@example.com' },
+  { id: 'manuel.rovira@example.com', name: 'Manuel Rovira', email: 'manuel.rovira@example.com' },
+  { id: 'alice.smith@example.com', name: 'Alice Smith', email: 'alice.smith@example.com' },
 ];
 
 // Settings sections matching the screenshot
@@ -607,7 +707,17 @@ const CustomContent = () => {
 };
 
 const SecurityContent = () => {
-  const { enabled, setEnabled, threshold, setThreshold, userB, setUserB } = useMultiSign();
+  const { 
+    enabled, 
+    setEnabled, 
+    threshold, 
+    setThreshold, 
+    userB, 
+    setUserB, 
+    saveToBackend, 
+    isLoading, 
+    error 
+  } = useMultiSign();
   const [showSeedDialog, setShowSeedDialog] = useState(false);
   const [seedPhrase, setSeedPhrase] = useState<string[]>(Array(12).fill(''));
   const [seedError, setSeedError] = useState('');
@@ -622,6 +732,7 @@ const SecurityContent = () => {
   const [unlockSeedPhrase, setUnlockSeedPhrase] = useState<string[]>(Array(12).fill(''));
   const [unlockSeedError, setUnlockSeedError] = useState('');
   const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleToggle = () => {
     if (enabled) {
@@ -656,9 +767,18 @@ const SecurityContent = () => {
     }
   };
 
-  const handleFinalConfirm = () => {
-    setIsPartnerConfirmed(true);
-    setShowReviewDialog(false);
+  const handleFinalConfirm = async () => {
+    setIsSaving(true);
+    try {
+      await saveToBackend();
+      setIsPartnerConfirmed(true);
+      setShowReviewDialog(false);
+    } catch (error) {
+      console.error('Failed to save multi-signature settings:', error);
+      // Error is already handled in the context
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleUnlockForModification = () => {
@@ -726,6 +846,36 @@ const SecurityContent = () => {
                 💡 Multi-signature adds an extra layer of security by requiring approval from another user for transactions above your set threshold.
               </Typography>
             </Box>
+
+            {/* Error Display */}
+            {error && (
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: alpha('#f44336', 0.1),
+                borderRadius: 2,
+                border: `1px solid ${alpha('#f44336', 0.3)}`,
+                mb: 3
+              }}>
+                <Typography variant="body2" sx={{ color: '#d32f2f' }}>
+                  ⚠️ {error}
+                </Typography>
+              </Box>
+            )}
+
+            {/* Loading State */}
+            {isLoading && (
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: alpha('#2196f3', 0.1),
+                borderRadius: 2,
+                border: `1px solid ${alpha('#2196f3', 0.3)}`,
+                mb: 3
+              }}>
+                <Typography variant="body2" sx={{ color: '#1976d2' }}>
+                  🔄 Loading multi-signature settings...
+                </Typography>
+              </Box>
+            )}
             
             <Box sx={{ mb: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -1222,8 +1372,9 @@ const SecurityContent = () => {
             onClick={handleFinalConfirm} 
             color="primary"
             sx={{ ml: 1 }}
+            disabled={isSaving}
           >
-            Confirm & Lock Settings
+            {isSaving ? 'Saving...' : 'Confirm & Lock Settings'}
           </Button>
         </DialogActions>
       </Dialog>
