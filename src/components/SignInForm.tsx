@@ -27,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import { AccountBalanceWallet } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
+import { useLogin } from '../hooks/useAuth';
 
 interface SignInFormProps {
   open: boolean;
@@ -40,9 +41,9 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [loginError, setLoginError] = useState('');
   const router = useRouter();
+  
+  const { login, isLoading, error: loginError } = useLogin();
 
   const handleInputChange =
     (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,7 +58,6 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
           [field]: '',
         }));
       }
-      setLoginError('');
     };
 
   const validateForm = () => {
@@ -86,31 +86,23 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
       return;
     }
 
-    setIsLoading(true);
-    setLoginError('');
-
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await login({
+        email: formData.email,
+        password: formData.password,
+      });
 
-      // Here you would typically make an API call to your backend
-      // const response = await fetch('/api/auth/signin', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData),
-      // });
-
-      // For now, just simulate success
-      console.log('Sign in attempt:', formData);
-
-      // Close the form on success
-      onClose();
-      // Redirect to LoginDashboard page
-      router.push('/duplicateddashboard');
+      if (response.success) {
+        // Close the form on success
+        onClose();
+        // Reset form
+        setFormData({ email: '', password: '' });
+        // Redirect to dashboard
+        router.push('/duplicateddashboard');
+      }
     } catch (error) {
-      setLoginError('Invalid email or password. Please try again.');
-    } finally {
-      setIsLoading(false);
+      // Error is already handled by the useLogin hook
+      console.error('Login failed:', error);
     }
   };
 
@@ -175,6 +167,7 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
             error={!!errors.email}
             helperText={errors.email}
             margin="normal"
+            disabled={isLoading}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -201,6 +194,7 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
             error={!!errors.password}
             helperText={errors.password}
             margin="normal"
+            disabled={isLoading}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -212,6 +206,7 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
                   <IconButton
                     onClick={() => setShowPassword(!showPassword)}
                     edge="end"
+                    disabled={isLoading}
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -298,6 +293,7 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
               variant="outlined"
               startIcon={<Google />}
               onClick={() => handleSocialLogin('Google')}
+              disabled={isLoading}
               sx={{
                 borderRadius: 2,
                 py: 1.5,
@@ -316,6 +312,7 @@ export default function SignInForm({ open, onClose }: SignInFormProps) {
               variant="outlined"
               startIcon={<Facebook />}
               onClick={() => handleSocialLogin('Facebook')}
+              disabled={isLoading}
               sx={{
                 borderRadius: 2,
                 py: 1.5,

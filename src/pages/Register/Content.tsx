@@ -11,13 +11,18 @@ import {
   FormControlLabel,
   Divider,
   Link,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PersonAdd, Email, Phone, Lock, Person } from '@mui/icons-material';
+import { useRegister } from '../../hooks/useAuth';
 
 export default function RegisterContent() {
   const router = useRouter();
+  const { register, isLoading, error: registerError } = useRegister();
+  
   const [formData, setFormData] = useState({
     username: '',
     firstName: '',
@@ -101,13 +106,27 @@ export default function RegisterContent() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (validateForm()) {
-      console.log('Form submitted:', formData);
-      // Here you would typically send the data to your backend
-      // Redirect to seed phrase page
-      router.push('/seedphrase');
+      try {
+        const response = await register({
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          // phoneNumber is optional, so we can include username as a display name or skip it
+        });
+
+        if (response.success) {
+          console.log('Registration successful:', response);
+          // Redirect to seed phrase page
+          router.push('/seedphrase');
+        }
+      } catch (error) {
+        console.error('Registration failed:', error);
+        // Error is already handled by the useRegister hook
+      }
     }
   };
 
@@ -258,6 +277,13 @@ export default function RegisterContent() {
             onSubmit={handleSubmit}
             sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}
           >
+            {/* Error Alert */}
+            {registerError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {registerError}
+              </Alert>
+            )}
+
             {/* Username */}
             <TextField
               fullWidth
@@ -267,6 +293,7 @@ export default function RegisterContent() {
               onChange={handleInputChange('username')}
               error={!!errors.username}
               helperText={errors.username}
+              disabled={isLoading}
               InputLabelProps={{ sx: { color: '#171635' } }}
               InputProps={{
                 startAdornment: <Person sx={{ mr: 1, color: '#4DA1A9' }} />,
@@ -283,6 +310,7 @@ export default function RegisterContent() {
                 onChange={handleInputChange('firstName')}
                 error={!!errors.firstName}
                 helperText={errors.firstName}
+                disabled={isLoading}
                 InputLabelProps={{ sx: { color: '#171635' } }}
               />
               <TextField
@@ -293,6 +321,7 @@ export default function RegisterContent() {
                 onChange={handleInputChange('lastName')}
                 error={!!errors.lastName}
                 helperText={errors.lastName}
+                disabled={isLoading}
                 InputLabelProps={{ sx: { color: '#171635' } }}
               />
             </Box>
@@ -307,6 +336,7 @@ export default function RegisterContent() {
               onChange={handleInputChange('email')}
               error={!!errors.email}
               helperText={errors.email}
+              disabled={isLoading}
               InputLabelProps={{ sx: { color: '#171635' } }}
               InputProps={{
                 startAdornment: <Email sx={{ mr: 1, color: '#4DA1A9' }} />,
@@ -324,6 +354,7 @@ export default function RegisterContent() {
                 onChange={handleInputChange('password')}
                 error={!!errors.password}
                 helperText={errors.password}
+                disabled={isLoading}
                 InputLabelProps={{ sx: { color: '#171635' } }}
                 InputProps={{
                   startAdornment: <Lock sx={{ mr: 1, color: '#4DA1A9' }} />,
@@ -338,6 +369,7 @@ export default function RegisterContent() {
                 onChange={handleInputChange('confirmPassword')}
                 error={!!errors.confirmPassword}
                 helperText={errors.confirmPassword}
+                disabled={isLoading}
                 InputLabelProps={{ sx: { color: '#171635' } }}
                 InputProps={{
                   startAdornment: <Lock sx={{ mr: 1, color: '#4DA1A9' }} />,
@@ -352,6 +384,7 @@ export default function RegisterContent() {
                   <Checkbox
                     checked={formData.acceptTerms}
                     onChange={handleCheckboxChange('acceptTerms')}
+                    disabled={isLoading}
                     sx={{
                       '&.Mui-checked': { color: '#FFA630' },
                     }}
@@ -393,6 +426,7 @@ export default function RegisterContent() {
               fullWidth
               variant="contained"
               size="large"
+              disabled={isLoading}
               sx={{
                 mt: 2,
                 py: 1.5,
@@ -403,9 +437,19 @@ export default function RegisterContent() {
                 '&:hover': {
                   background: 'linear-gradient(90deg, #856DA9, #41898F)',
                 },
+                '&:disabled': {
+                  background: '#cccccc',
+                },
               }}
             >
-              Create Account →
+              {isLoading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={20} sx={{ color: 'white' }} />
+                  <Typography>Creating Account...</Typography>
+                </Box>
+              ) : (
+                'Create Account →'
+              )}
             </Button>
 
             {/* Login Link */}
