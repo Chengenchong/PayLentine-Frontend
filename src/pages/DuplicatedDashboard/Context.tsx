@@ -84,7 +84,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { useMultiSign } from '../MultiSign-Settings/Content';
+import { useMultiSign, useSafeMultiSign } from '../MultiSign-Settings/Content';
 
 // Color palette
 const COLORS = {
@@ -451,7 +451,7 @@ export default function DuplicatedDashboardPage() {
 
   // Simulate current user (replace with real user from auth/db)
   const currentUser = { id: 'C002', name: 'Vanessa Saldia' }; // User B for demo
-  const { enabled, threshold, userB } = useMultiSign();
+  const { enabled, threshold, userB } = useSafeMultiSign();
   const [pendingApproval, setPendingApproval] = useState<null | { amount: string; from: string }>(null);
 
   // Get current date in 'D MMM YYYY' format

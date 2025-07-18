@@ -89,6 +89,35 @@ import {
 } from '../../services/multisig';
 import type { MultiSignSettings as BackendMultiSignSettings } from '../../types/multisig';
 
+// Safe theme hook that handles SSR
+const useSafeAppTheme = () => {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  try {
+    const themeContext = useAppTheme();
+    // During SSR or before hydration, return safe defaults
+    if (!mounted) {
+      return {
+        mode: 'light' as const,
+        setTheme: () => {},
+        toggleTheme: () => {}
+      };
+    }
+    return themeContext;
+  } catch (error) {
+    // Fallback for when context is not available
+    return {
+      mode: 'light' as const,
+      setTheme: () => {},
+      toggleTheme: () => {}
+    };
+  }
+};
+
 // --- MultiSign Context/Provider/Hook ---
 export type Contact = { id: string; name: string; email?: string; };
 
@@ -216,6 +245,49 @@ export function useMultiSign() {
   return ctx;
 }
 
+// Safe version of useMultiSign that works during SSR
+export function useSafeMultiSign() {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  try {
+    const ctx = useContext(MultiSignContext);
+    if (!mounted || !ctx) {
+      // Return safe defaults during SSR or when context is not available
+      return {
+        enabled: false,
+        threshold: 1000,
+        userB: null,
+        setEnabled: () => {},
+        setThreshold: () => {},
+        setUserB: () => {},
+        saveToBackend: async () => {},
+        loadFromBackend: async () => {},
+        isLoading: false,
+        error: null
+      };
+    }
+    return ctx;
+  } catch (error) {
+    // Fallback for when context is not available
+    return {
+      enabled: false,
+      threshold: 1000,
+      userB: null,
+      setEnabled: () => {},
+      setThreshold: () => {},
+      setUserB: () => {},
+      saveToBackend: async () => {},
+      loadFromBackend: async () => {},
+      isLoading: false,
+      error: null
+    };
+  }
+}
+
 // Dummy contacts
 const contacts = [
   { id: 'bruno.hoffman@example.com', name: 'Bruno Hoffman', email: 'bruno.hoffman@example.com' },
@@ -261,7 +333,7 @@ const PreferencesContent = () => {
   const [currency, setCurrency] = useState('USD ($)');
   const [preferredTimeSlot, setPreferredTimeSlot] = useState('morning');
   const [autoReorder, setAutoReorder] = useState(true);
-  const { mode, setTheme } = useAppTheme();
+  const { mode, setTheme } = useSafeAppTheme();
   const theme = useMuiTheme();
 
   const handleThemeChange = (isDark: boolean) => {
@@ -540,7 +612,7 @@ const NotificationsContent = () => {
 };
 
 const CustomContent = () => {
-  const { mode, setTheme } = useAppTheme();
+  const { mode, setTheme } = useSafeAppTheme();
   const theme = useMuiTheme();
   const [fontSize, setFontSize] = useState(16);
   const [compactMode, setCompactMode] = useState(false);
@@ -1574,10 +1646,20 @@ const SettingsContent = ({ activeSection }: { activeSection: string }) => {
   }
 };
 
-export default function MultiSignSettings() {
+function MultiSignSettings() {
   const [activeSection, setActiveSection] = useState('preferences');
+  const [mounted, setMounted] = useState(false);
   const theme = useMuiTheme();
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render until mounted to prevent SSR issues
+  if (!mounted) {
+    return null;
+  }
 
   const handleSaveSettings = () => {
     // Handle save settings logic
@@ -1585,7 +1667,7 @@ export default function MultiSignSettings() {
   };
 
   const handleBackToDashboard = () => {
-    router.push('/duplicateddashboard');
+    router
   };
 
   return (
@@ -1707,3 +1789,5 @@ export default function MultiSignSettings() {
     </Box>
   );
 }
+
+export default MultiSignSettings;
