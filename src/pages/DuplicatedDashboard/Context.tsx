@@ -599,7 +599,7 @@ export default function DuplicatedDashboardPage() {
         enabled &&
         Number(payForm.amount) > threshold &&
         userB &&
-        userB.id !== currentUser.id // Only trigger approval if not User B
+        userB.id.toString() !== currentUser.id // Only trigger approval if not User B
       ) {
         // Create pending transaction for multi-signature approval
         const transactionData = {
