@@ -7,12 +7,10 @@ import type { ApiResponse, ApiError as ApiErrorType } from '../types/auth';
 let currentBaseUrl = BASE_URL;
 
 export const setApiEnvironment = (environment: 'PRODUCTION' | 'DEVELOPMENT') => {
-  // Always use localhost for now - uncomment below for remote API switching
-  currentBaseUrl = 'http://localhost:3001/api';
-  
-  // currentBaseUrl = environment === 'PRODUCTION' 
-  //   ? 'https://paylentine-backend-1.onrender.com/api'  // Remote production API
-  //   : 'http://localhost:3001/api';                     // Local development API
+  // Enable remote API switching for deployment
+  currentBaseUrl = environment === 'PRODUCTION' 
+    ? 'https://paylentine-backend-1.onrender.com/api'  // Remote production API
+    : 'http://localhost:3001/api';                     // Local development API
 };
 
 export const getCurrentBaseUrl = () => currentBaseUrl;

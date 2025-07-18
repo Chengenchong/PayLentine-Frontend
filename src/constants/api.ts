@@ -1,17 +1,14 @@
 // API Configuration Constants
 
 export const API_ENVIRONMENTS = {
-  // PRODUCTION: 'https://paylentine-backend-1.onrender.com/api', // Commented out for localhost development
-  PRODUCTION: 'http://localhost:3001/api', // Using localhost for now
+  PRODUCTION: 'https://paylentine-backend-1.onrender.com/api', // Production API for deployment
   DEVELOPMENT: 'http://localhost:3001/api',
 } as const;
 
-// Default to localhost for both development and production builds
-// Switch back to remote API by uncommenting the production URL above
-export const BASE_URL = API_ENVIRONMENTS.DEVELOPMENT; // Always use localhost
-// export const BASE_URL = process.env.NODE_ENV === 'development' 
-//   ? API_ENVIRONMENTS.DEVELOPMENT 
-//   : API_ENVIRONMENTS.PRODUCTION;
+// Use production API for deployment, development API for local development
+export const BASE_URL = process.env.NODE_ENV === 'development' 
+  ? API_ENVIRONMENTS.DEVELOPMENT 
+  : API_ENVIRONMENTS.PRODUCTION;
 
 // API Endpoints
 export const API_ENDPOINTS = {
