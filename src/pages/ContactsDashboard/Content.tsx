@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -17,6 +17,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import {
   Home,
@@ -35,7 +38,12 @@ import {
   FilterList,
   Download,
   Add,
+  Edit,
+  Delete,
+  VerifiedUser,
 } from '@mui/icons-material';
+import { getContacts, createContact, updateContact, deleteContact, verifyContact } from '../../services/contacts';
+import type { Contact } from '../../types/contacts';
 
 // Color palette
 const COLORS = {
@@ -91,12 +99,132 @@ const Content = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newContact, setNewContact] = useState({ id: '', name: '' });
-  const [contactsState, setContactsState] = useState(contacts);
-  const pageCount = Math.ceil(contactsState.length / ROWS_PER_PAGE);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [newContact, setNewContact] = useState({ email: '', nickname: '' });
+  const [editContact, setEditContact] = useState<Contact | null>(null);
+  const [contactsState, setContactsState] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+
+  // Load contacts from backend on component mount
+  useEffect(() => {
+    loadContacts();
+  }, []);
+
+  const loadContacts = async () => {
+    setLoading(true);
+    try {
+      const response = await getContacts();
+      if (response.success && response.data) {
+        setContactsState(response.data);
+        setError('');
+      } else {
+        setError(response.errors?.[0]?.message || 'Failed to load contacts');
+      }
+    } catch (err) {
+      setError('Failed to connect to server');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddContact = async () => {
+    if (!newContact.email.trim()) {
+      setSnackbar({ open: true, message: 'Email is required', severity: 'error' });
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newContact.email)) {
+      setSnackbar({ open: true, message: 'Please enter a valid email address', severity: 'error' });
+      return;
+    }
+
+    try {
+      const response = await createContact({
+        email: newContact.email,
+        nickname: newContact.nickname || undefined, // Only send nickname if provided
+      });
+      if (response.success && response.data) {
+        setContactsState(prev => [...prev, response.data]);
+        setAddDialogOpen(false);
+        setNewContact({ email: '', nickname: '' });
+        setSnackbar({ open: true, message: 'Contact added successfully', severity: 'success' });
+        
+        // Emit custom event to notify other components about contact update
+        window.dispatchEvent(new CustomEvent('contactUpdated'));
+      } else {
+        setSnackbar({ open: true, message: response.errors?.[0]?.message || 'Failed to add contact', severity: 'error' });
+      }
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to add contact', severity: 'error' });
+    }
+  };
+
+  const handleEditContact = async () => {
+    if (!editContact || !editContact.nickname?.trim()) {
+      setSnackbar({ open: true, message: 'Nickname is required', severity: 'error' });
+      return;
+    }
+
+    try {
+      const response = await updateContact(editContact.id.toString(), {
+        nickname: editContact.nickname,
+      });
+      if (response.success && response.data) {
+        setContactsState(prev => prev.map(c => c.id.toString() === editContact.id.toString() ? response.data : c));
+        setEditDialogOpen(false);
+        setEditContact(null);
+        setSnackbar({ open: true, message: 'Contact updated successfully', severity: 'success' });
+        
+        // Emit custom event to notify other components about contact update
+        window.dispatchEvent(new CustomEvent('contactUpdated'));
+      } else {
+        setSnackbar({ open: true, message: response.errors?.[0]?.message || 'Failed to update contact', severity: 'error' });
+      }
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to update contact', severity: 'error' });
+    }
+  };
+
+  const handleDeleteContact = async (contactId: string | number) => {
+    if (!window.confirm('Are you sure you want to delete this contact?')) return;
+
+    try {
+      const response = await deleteContact(contactId.toString());
+      if (response.success) {
+        setContactsState(prev => prev.filter(c => c.id.toString() !== contactId.toString()));
+        setSnackbar({ open: true, message: 'Contact deleted successfully', severity: 'success' });
+        
+        // Emit custom event to notify other components about contact update
+        window.dispatchEvent(new CustomEvent('contactUpdated'));
+      } else {
+        setSnackbar({ open: true, message: response.errors?.[0]?.message || 'Failed to delete contact', severity: 'error' });
+      }
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to delete contact', severity: 'error' });
+    }
+  };
+
+  const handleVerifyContact = async (contactId: string | number) => {
+    try {
+      const response = await verifyContact(contactId.toString());
+      if (response.success && response.data) {
+        setContactsState(prev => prev.map(c => c.id.toString() === contactId.toString() ? response.data : c));
+        setSnackbar({ open: true, message: 'Contact verified successfully', severity: 'success' });
+      } else {
+        setSnackbar({ open: true, message: response.errors?.[0]?.message || 'Failed to verify contact', severity: 'error' });
+      }
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to verify contact', severity: 'error' });
+    }
+  };
   const filteredContacts = contactsState.filter((contact) =>
-    contact.name.toLowerCase().includes(search.toLowerCase())
+    (contact.name || contact.email || '').toLowerCase().includes(search.toLowerCase())
   );
+  const pageCount = Math.ceil(filteredContacts.length / ROWS_PER_PAGE);
   const paginated = filteredContacts.slice(
     (page - 1) * ROWS_PER_PAGE,
     page * ROWS_PER_PAGE
@@ -426,60 +554,128 @@ const Content = () => {
             boxShadow: 1,
           }}
         >
-          {/* Table Header */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '60px 200px 1fr',
-              py: 2,
-              borderBottom: '1px solid #F0F0F0',
-              fontWeight: 600,
-              color: COLORS.fontMain,
-              fontSize: 12,
-            }}
-          >
-            <Box sx={{ textAlign: 'center' }}>N°</Box>
-            <Box sx={{ textAlign: 'center' }}>ID</Box>
-            <Box sx={{ textAlign: 'center' }}>Name</Box>
-          </Box>
+          {/* Error Display */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+              <Button size="small" onClick={loadContacts} sx={{ ml: 2 }}>
+                Retry
+              </Button>
+            </Alert>
+          )}
 
-          {/* Contacts List */}
-          <Box sx={{ minHeight: 400 }}>
-            {paginated.length === 0 ? (
-              <Typography sx={{ p: 4, textAlign: 'center', color: '#B0B0B0' }}>
-                No contacts found.
-              </Typography>
-            ) : (
-              paginated.map((contact, idx) => (
-                <Box
-                  key={contact.id}
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: '60px 200px 1fr',
-                    alignItems: 'center',
-                    py: 1.5,
-                    borderBottom:
-                      idx === paginated.length - 1
-                        ? 'none'
-                        : '1px solid #F0F0F0',
-                    cursor: 'pointer',
-                    '&:hover': { background: '#f3eaff' },
-                    fontSize: 11,
-                  }}
-                >
-                  <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
-                    {(page - 1) * ROWS_PER_PAGE + idx + 1}
-                  </Box>
-                  <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
-                    {contact.id}
-                  </Box>
-                  <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
-                    {contact.name}
-                  </Box>
-                </Box>
-              ))
-            )}
-          </Box>
+          {/* Loading State */}
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              {/* Table Header */}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: '200px 200px 150px 100px 120px',
+                  py: 2,
+                  borderBottom: '1px solid #F0F0F0',
+                  fontWeight: 600,
+                  color: COLORS.fontMain,
+                  fontSize: 12,
+                }}
+              >
+                <Box sx={{ textAlign: 'center' }}>Name</Box>
+                <Box sx={{ textAlign: 'center' }}>Email</Box>
+                <Box sx={{ textAlign: 'center' }}>Nickname</Box>
+                <Box sx={{ textAlign: 'center' }}>Status</Box>
+                <Box sx={{ textAlign: 'center' }}>Actions</Box>
+              </Box>
+
+              {/* Contacts List */}
+              <Box sx={{ minHeight: 400 }}>
+                {paginated.length === 0 ? (
+                  <Typography sx={{ p: 4, textAlign: 'center', color: '#B0B0B0' }}>
+                    {search ? 'No contacts found matching your search.' : 'No contacts yet. Add your first contact!'}
+                  </Typography>
+                ) : (
+                  paginated.map((contact, idx) => (
+                    <Box
+                      key={contact.id}
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: '200px 200px 150px 100px 120px',
+                        alignItems: 'center',
+                        py: 1.5,
+                        borderBottom:
+                          idx === paginated.length - 1
+                            ? 'none'
+                            : '1px solid #F0F0F0',
+                        cursor: 'pointer',
+                        '&:hover': { background: '#f3eaff' },
+                        fontSize: 11,
+                      }}
+                    >
+                      <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
+                        {contact.name || contact.email?.split('@')[0] || 'Unnamed Contact'}
+                      </Box>
+                      <Box sx={{ textAlign: 'center', fontWeight: 500, color: '#666' }}>
+                        {contact.email}
+                      </Box>
+                      <Box sx={{ textAlign: 'center', fontWeight: 500, color: '#666' }}>
+                        {contact.nickname || '-'}
+                      </Box>
+                      <Box sx={{ textAlign: 'center' }}>
+                        {contact.isVerified ? (
+                          <Typography variant="caption" sx={{ 
+                            color: '#4CAF50', 
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 0.5
+                          }}>
+                            <VerifiedUser sx={{ fontSize: 16 }} />
+                            Verified
+                          </Typography>
+                        ) : (
+                          <Typography variant="caption" sx={{ color: '#FFA630', fontWeight: 600 }}>
+                            Unverified
+                          </Typography>
+                        )}
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => {
+                            setEditContact(contact);
+                            setEditDialogOpen(true);
+                          }}
+                          sx={{ color: COLORS.btnIcon2 }}
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                        {!contact.isVerified && (
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleVerifyContact(contact.id.toString())}
+                            sx={{ color: '#4CAF50' }}
+                          >
+                            <VerifiedUser fontSize="small" />
+                          </IconButton>
+                        )}
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDeleteContact(contact.id.toString())}
+                          sx={{ color: '#f44336' }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  ))
+                )}
+              </Box>
+            </>
+          )}
 
           {/* Pagination */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
@@ -493,38 +689,109 @@ const Content = () => {
         </Paper>
 
         {/* Add Contact Dialog */}
-        <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)}>
+        <Dialog 
+          open={addDialogOpen} 
+          onClose={() => {
+            setAddDialogOpen(false);
+            setNewContact({ email: '', nickname: '' });
+          }}
+        >
           <DialogTitle>Add New Contact</DialogTitle>
-          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 300 }}>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 400 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Enter the email address of the person you want to add to your contacts. You can also add a nickname to help identify them.
+            </Typography>
             <TextField
-              label="ID"
-              value={newContact.id}
-              onChange={e => setNewContact({ ...newContact, id: e.target.value })}
+              label="Email Address"
+              type="email"
+              value={newContact.email}
+              onChange={e => setNewContact(prev => ({ ...prev, email: e.target.value }))}
               fullWidth
+              required
+              placeholder="example@email.com"
+              helperText="Enter a valid email address"
             />
             <TextField
-              label="Name"
-              value={newContact.name}
-              onChange={e => setNewContact({ ...newContact, name: e.target.value })}
+              label="Nickname (Optional)"
+              value={newContact.nickname}
+              onChange={e => setNewContact(prev => ({ ...prev, nickname: e.target.value }))}
               fullWidth
+              placeholder="My Friend Chuck"
+              helperText="Give this contact a friendly nickname"
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              setAddDialogOpen(false);
+              setNewContact({ email: '', nickname: '' });
+            }}>Cancel</Button>
             <Button
               variant="contained"
-              onClick={() => {
-                if (newContact.id && newContact.name) {
-                  setContactsState([...contactsState, newContact]);
-                  setNewContact({ id: '', name: '' });
-                  setAddDialogOpen(false);
-                }
-              }}
+              onClick={handleAddContact}
+              disabled={!newContact.email.trim()}
             >
-              Add
+              Add Contact
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Edit Contact Dialog */}
+        <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
+          <DialogTitle>Edit Contact</DialogTitle>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 400 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              You can only edit the nickname for this contact. The name and email are managed by the user's profile.
+            </Typography>
+            <TextField
+              label="Name"
+              value={editContact?.name || ''}
+              fullWidth
+              disabled
+              helperText="Name cannot be changed - managed by user profile"
+            />
+            <TextField
+              label="Email"
+              type="email"
+              value={editContact?.email || ''}
+              fullWidth
+              disabled
+              helperText="Email cannot be changed - managed by user profile"
+            />
+            <TextField
+              label="Nickname"
+              value={editContact?.nickname || ''}
+              onChange={e => setEditContact(prev => prev ? { ...prev, nickname: e.target.value } : null)}
+              fullWidth
+              required
+              helperText="Give this contact a friendly nickname"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              onClick={handleEditContact}
+              disabled={!editContact?.nickname?.trim()}
+            >
+              Update Contact
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          <Alert 
+            onClose={() => setSnackbar({ ...snackbar, open: false })} 
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </Box>
   );

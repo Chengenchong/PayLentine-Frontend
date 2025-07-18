@@ -88,6 +88,8 @@ import {
   validateSeedPhrase 
 } from '../../services/multisig';
 import type { MultiSignSettings as BackendMultiSignSettings } from '../../types/multisig';
+import { getContactsForMultiSign } from '../../services/contacts';
+import type { Contact as ContactType } from '../../types/contacts';
 
 // Safe theme hook that handles SSR
 const useSafeAppTheme = () => {
@@ -119,15 +121,14 @@ const useSafeAppTheme = () => {
 };
 
 // --- MultiSign Context/Provider/Hook ---
-export type Contact = { id: string; name: string; email?: string; };
 
 interface MultiSignSettings {
   enabled: boolean;
   threshold: number;
-  userB: Contact | null;
+  userB: ContactType | null;
   setEnabled: (enabled: boolean) => void;
   setThreshold: (threshold: number) => void;
-  setUserB: (user: Contact | null) => void;
+  setUserB: (user: ContactType | null) => void;
   saveToBackend: () => Promise<void>;
   loadFromBackend: () => Promise<void>;
   isLoading: boolean;
@@ -139,7 +140,7 @@ const MultiSignContext = createContext<MultiSignSettings | undefined>(undefined)
 export const MultiSignProvider = ({ children }: { children: ReactNode }) => {
   const [enabled, setEnabled] = useState(false);
   const [threshold, setThreshold] = useState(1000);
-  const [userB, setUserB] = useState<Contact | null>(null);
+  const [userB, setUserB] = useState<ContactType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
@@ -168,8 +169,12 @@ export const MultiSignProvider = ({ children }: { children: ReactNode }) => {
         setThreshold(settings.thresholdAmount || 1000);
         if (settings.partnerEmail) {
           setUserB({
-            id: settings.partnerEmail,
-            name: settings.partnerName || settings.partnerEmail,
+            id: 1, // Temporary ID
+            ownerId: 1, // Will be filled by backend
+            contactUserId: 1, // Will be filled by backend  
+            nickname: settings.partnerName || settings.partnerEmail.split('@')[0],
+            isVerified: false,
+            name: settings.partnerName || settings.partnerEmail.split('@')[0],
             email: settings.partnerEmail,
           });
         }
@@ -191,7 +196,7 @@ export const MultiSignProvider = ({ children }: { children: ReactNode }) => {
       const settings: Partial<BackendMultiSignSettings> = {
         isEnabled: enabled,
         thresholdAmount: threshold,
-        partnerEmail: userB?.email || userB?.id,
+        partnerEmail: userB?.email || userB?.id?.toString(),
         partnerName: userB?.name,
       };
       
@@ -288,7 +293,7 @@ export function useSafeMultiSign() {
   }
 }
 
-// Dummy contacts
+// Dummy contacts - will be replaced by dynamic loading
 const contacts = [
   { id: 'bruno.hoffman@example.com', name: 'Bruno Hoffman', email: 'bruno.hoffman@example.com' },
   { id: 'vanessa.saldia@example.com', name: 'Vanessa Saldia', email: 'vanessa.saldia@example.com' },
@@ -806,6 +811,76 @@ const SecurityContent = () => {
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Dynamic contacts state
+  const [dynamicContacts, setDynamicContacts] = useState<ContactType[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+
+  // Load contacts from backend
+  const loadContacts = async () => {
+    setContactsLoading(true);
+    try {
+      const backendContacts = await getContactsForMultiSign();
+      if (backendContacts.length > 0) {
+        setDynamicContacts(backendContacts);
+        
+        // Update selected userB with fresh data if it exists
+        if (userB) {
+          const updatedContact = backendContacts.find(c => c.id === userB.id);
+          if (updatedContact) {
+            // Preserve the selection but update with fresh data
+            setUserB(updatedContact);
+          }
+        }
+      } else {
+        // Fallback to dummy contacts if no backend contacts
+        setDynamicContacts(contacts.map((c, index) => ({
+          id: index + 1, // Convert to number ID
+          ownerId: 1, // Dummy owner ID
+          contactUserId: index + 1, // Use index as contact user ID
+          nickname: c.name,
+          isVerified: false,
+          // Computed properties for backward compatibility
+          name: c.name,
+          email: c.email,
+        })));
+      }
+    } catch (err) {
+      console.error('Failed to load contacts:', err);
+      // Use dummy contacts as fallback
+      setDynamicContacts(contacts.map((c, index) => ({
+        id: index + 1, // Convert to number ID
+        ownerId: 1, // Dummy owner ID
+        contactUserId: index + 1, // Use index as contact user ID
+        nickname: c.name,
+        isVerified: false,
+        // Computed properties for backward compatibility
+        name: c.name,
+        email: c.email,
+      })));
+    } finally {
+      setContactsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadContacts();
+  }, []);
+
+  // Add event listener for contact updates
+  useEffect(() => {
+    const handleContactUpdate = () => {
+      // Refresh contacts when any contact is updated
+      loadContacts();
+    };
+
+    // Listen for custom contact update events
+    window.addEventListener('contactUpdated', handleContactUpdate);
+    
+    return () => {
+      window.removeEventListener('contactUpdated', handleContactUpdate);
+    };
+  }, []);
+
   const handleToggle = () => {
     if (enabled) {
       setShowSeedDialog(true);
@@ -845,6 +920,17 @@ const SecurityContent = () => {
       await saveToBackend();
       setIsPartnerConfirmed(true);
       setShowReviewDialog(false);
+      
+      // Refresh contacts to ensure we have the latest data
+      await loadContacts();
+      
+      // Update the selected userB with fresh data from backend
+      if (userB) {
+        const updatedContact = dynamicContacts.find(c => c.id === userB.id);
+        if (updatedContact) {
+          setUserB(updatedContact);
+        }
+      }
     } catch (error) {
       console.error('Failed to save multi-signature settings:', error);
       // Error is already handled in the context
@@ -1042,20 +1128,36 @@ const SecurityContent = () => {
                 {/* Partner Selection */}
                 <Box sx={{ mb: 2 }}>
                   <Autocomplete
-                    options={contacts}
-                    getOptionLabel={(option) => `${option.name} (${option.id})`}
+                    options={dynamicContacts}
+                    getOptionLabel={(option) => `${option.name} (${option.email})`}
                     value={userB}
                     onChange={(_, val) => !isPartnerConfirmed && setUserB(val)}
                     renderInput={(params) => (
                       <TextField 
                         {...params} 
-                        label="Select trusted contact" 
+                        label={contactsLoading ? "Loading contacts..." : "Select trusted contact"}
                         size="small"
                         helperText={isPartnerConfirmed ? "Partner selection is locked. Use unlock button to modify." : "Choose a trusted contact who will approve transactions above the threshold"}
                       />
                     )}
-                    disabled={!enabled || isPartnerConfirmed}
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    disabled={!enabled || isPartnerConfirmed || contactsLoading}
+                    loading={contactsLoading}
+                    isOptionEqualToValue={(option, value) => option.id === value?.id}
+                    renderOption={(props, option) => {
+                      const { key, ...otherProps } = props;
+                      return (
+                        <Box component="li" key={key} {...otherProps}>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {option.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {option.email} {(option as ContactType).isVerified && '✓ Verified'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      );
+                    }}
                   />
                 </Box>
                 
@@ -1329,11 +1431,11 @@ const SecurityContent = () => {
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                     <Avatar sx={{ width: 32, height: 32, mr: 1, bgcolor: 'primary.main' }}>
-                      {userB?.name.charAt(0)}
+                      {userB?.name?.charAt(0) || userB?.email?.charAt(0) || 'U'}
                     </Avatar>
                     <Box>
                       <Typography variant="body1" fontWeight={600}>
-                        {userB?.name}
+                        {userB?.name || userB?.email || 'Selected Contact'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         ID: {userB?.id}
@@ -1369,7 +1471,7 @@ const SecurityContent = () => {
                     </li>
                     <li>
                       <Typography variant="body2">
-                        All transactions above {formatCurrency(threshold)} will require {userB?.name}'s approval
+                        All transactions above {formatCurrency(threshold)} will require {userB?.name || userB?.email || 'your partner'}'s approval
                       </Typography>
                     </li>
                   </Box>
@@ -1424,7 +1526,7 @@ const SecurityContent = () => {
                       Transactions {'>'}  {formatCurrency(threshold)}
                     </Typography>
                     <Typography variant="body2">
-                      🔒 Requires approval from {userB?.name}
+                      🔒 Requires approval from {userB?.name || userB?.email || 'partner'}
                     </Typography>
                   </Box>
                 </Box>

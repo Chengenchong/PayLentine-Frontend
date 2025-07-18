@@ -488,7 +488,7 @@ export default function DuplicatedDashboardPage() {
       enabled &&
       Number(payForm.amount) > threshold &&
       userB &&
-      userB.id !== currentUser.id // Only trigger approval if not User B
+      userB.id.toString() !== currentUser.id // Only trigger approval if not User B
     ) {
       // Simulate sending to User B for approval
       setPendingApproval({ amount: payForm.amount, from: currentUser.name });
@@ -554,7 +554,7 @@ export default function DuplicatedDashboardPage() {
 
   // Show approval popup for User B if pendingApproval exists and currentUser is User B
   const showApprovalPopup =
-    pendingApproval && userB && currentUser.id === userB.id;
+    pendingApproval && userB && currentUser.id === userB.id.toString();
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', background: COLORS.bg }}>
