@@ -90,7 +90,21 @@ import {
 } from '../../services/multisig';
 import type { MultiSignSettings as BackendMultiSignSettings } from '../../types/multisig';
 import { getContactsForMultiSign } from '../../services/contacts';
-import type { Contact as ContactType } from '../../types/contacts';
+import type { Contact as Contact } from '../../types/contacts';
+
+// Helper function to convert simple contact data to full Contact type
+const toContact = (data: any): Contact => ({
+  id: typeof data.id === 'string' ? parseInt(data.id) || Date.now() : data.id || Date.now(),
+  ownerId: data.ownerId || 1,
+  contactUserId: data.contactUserId || data.id || Date.now(),
+  nickname: data.nickname || data.name || 'Unknown',
+  isVerified: data.isVerified || false,
+  name: data.name || data.nickname || 'Unknown',
+  email: data.email || '',
+  createdAt: data.createdAt,
+  updatedAt: data.updatedAt,
+  contactUser: data.contactUser,
+});
 
 // Safe theme hook that handles SSR
 const useSafeAppTheme = () => {
@@ -186,29 +200,41 @@ export const MultiSignProvider = ({ children }: { children: ReactNode }) => {
         if (settings.signer && settings.signer.email) {
           // New API format with signer object
           setUserB({
-            id: settings.signer.email,
+            id: parseInt(settings.signer.id) || Date.now(),
+            ownerId: 1,
+            contactUserId: parseInt(settings.signer.id) || Date.now(),
+            nickname: `${settings.signer.firstName} ${settings.signer.lastName}`.trim(),
+            isVerified: true,
             name: `${settings.signer.firstName} ${settings.signer.lastName}`.trim(),
             email: settings.signer.email,
-          });
+          } as Contact);
         } else if (settings.partnerEmail) {
           // Legacy format with partnerEmail
           setUserB({
-            id: settings.partnerEmail,
+            id: Date.now(),
+            ownerId: 1,
+            contactUserId: Date.now(),
+            nickname: settings.partnerName || settings.partnerEmail,
+            isVerified: true,
             name: settings.partnerName || settings.partnerEmail,
             email: settings.partnerEmail,
-          });
+          } as Contact);
         } else if (settings.signerUserId && settings.signerEmail) {
           // Alternative format with signerEmail
           setUserB({
-            id: settings.signerEmail,
+            id: parseInt(settings.signerUserId) || Date.now(),
+            ownerId: 1,
+            contactUserId: parseInt(settings.signerUserId) || Date.now(),
+            nickname: settings.signerName || settings.signerEmail,
+            isVerified: true,
             name: settings.signerName || settings.signerEmail,
             email: settings.signerEmail,
-          });
+          } as Contact);
         } else if (settings.signerUserId) {
           // If we only have signerUserId, try to find the contact
-          const contact = contacts.find(c => c.id === settings.signerUserId.toString() || c.email === settings.signerUserId);
+          const contact = contacts.find((c: any) => c.id === settings.signerUserId || c.email === settings.signerUserId);
           if (contact) {
-            setUserB(contact);
+            setUserB(toContact(contact));
           }
         }
       }
@@ -252,10 +278,14 @@ export const MultiSignProvider = ({ children }: { children: ReactNode }) => {
           // Update userB with response data
           if (response.settings.signer) {
             setUserB({
-              id: response.settings.signer.email,
+              id: parseInt(response.settings.signer.id) || Date.now(),
+              ownerId: 1,
+              contactUserId: parseInt(response.settings.signer.id) || Date.now(),
+              nickname: `${response.settings.signer.firstName} ${response.settings.signer.lastName}`,
+              isVerified: true,
               name: `${response.settings.signer.firstName} ${response.settings.signer.lastName}`,
               email: response.settings.signer.email,
-            });
+            } as Contact);
           }
         }
         return;
@@ -852,7 +882,7 @@ const SecurityContent = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   // Dynamic contacts state
-  const [dynamicContacts, setDynamicContacts] = useState<ContactType[]>([]);
+  const [dynamicContacts, setDynamicContacts] = useState<Contact[]>([]);
   const [contactsLoading, setContactsLoading] = useState(false);
 
   // Load contacts from backend
@@ -861,42 +891,25 @@ const SecurityContent = () => {
     try {
       const backendContacts = await getContactsForMultiSign();
       if (backendContacts.length > 0) {
-        setDynamicContacts(backendContacts);
+        // Convert backend contacts to Contact format
+        const convertedContacts = backendContacts.map(c => toContact(c));
+        setDynamicContacts(convertedContacts);
         
         // Update selected userB with fresh data if it exists
         if (userB) {
-          const updatedContact = backendContacts.find(c => c.id === userB.id);
+          const updatedContact = convertedContacts.find(c => c.id === userB.id);
           if (updatedContact) {
-            // Preserve the selection but update with fresh data
             setUserB(updatedContact);
           }
         }
       } else {
         // Fallback to dummy contacts if no backend contacts
-        setDynamicContacts(contacts.map((c, index) => ({
-          id: index + 1, // Convert to number ID
-          ownerId: 1, // Dummy owner ID
-          contactUserId: index + 1, // Use index as contact user ID
-          nickname: c.name,
-          isVerified: false,
-          // Computed properties for backward compatibility
-          name: c.name,
-          email: c.email,
-        })));
+        setDynamicContacts(contacts.map(c => toContact(c)));
       }
     } catch (err) {
       console.error('Failed to load contacts:', err);
       // Use dummy contacts as fallback
-      setDynamicContacts(contacts.map((c, index) => ({
-        id: index + 1, // Convert to number ID
-        ownerId: 1, // Dummy owner ID
-        contactUserId: index + 1, // Use index as contact user ID
-        nickname: c.name,
-        isVerified: false,
-        // Computed properties for backward compatibility
-        name: c.name,
-        email: c.email,
-      })));
+      setDynamicContacts(contacts.map(c => toContact(c)));
     } finally {
       setContactsLoading(false);
     }
@@ -1296,10 +1309,10 @@ const SecurityContent = () => {
                 {/* Partner Selection */}
                 <Box sx={{ mb: 2 }}>
                   <Autocomplete
-                    options={contacts}
-                    getOptionLabel={(option) => `${option.name} (${option.email})`}
+                    options={dynamicContacts.length > 0 ? dynamicContacts : contacts.map(c => toContact(c))}
+                    getOptionLabel={(option) => `${option.name || option.nickname} (${option.email})`}
                     value={userB}
-                    onChange={(_, val) => handleContactSelect(val)}
+                    onChange={(_, val) => !locked && setUserB(val)}
                     renderInput={(params) => (
                       <TextField 
                         {...params} 
@@ -1308,8 +1321,24 @@ const SecurityContent = () => {
                         helperText={locked ? "Partner selection is locked. Use unlock button to modify." : "Choose a trusted contact who will approve transactions above the threshold"}
                       />
                     )}
-                    disabled={!enabled || locked}
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    disabled={!enabled || locked || contactsLoading}
+                    loading={contactsLoading}
+                    isOptionEqualToValue={(option, value) => option && value && option.id === value?.id}
+                    renderOption={(props, option) => {
+                      const { key, ...otherProps } = props;
+                      return (
+                        <Box component="li" key={key} {...otherProps}>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {option.name || option.nickname}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {option.email} {option.isVerified && '✓ Verified'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      );
+                    }}
                   />
                 </Box>
                 
@@ -1354,9 +1383,21 @@ const SecurityContent = () => {
                     border: `1px solid ${alpha('#FF9800', 0.3)}`,
                     mb: 2
                   }}>
-                    <Typography variant="body2" sx={{ color: '#F57C00' }}>
-                      ⚠️ <strong>Verification Required:</strong> Please unlock with your seed phrase first to enable multi-signature setup. This provides a verification token for secure configuration.
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" sx={{ color: '#F57C00' }}>
+                        ⚠️ <strong>Verification Required:</strong> Please unlock with your seed phrase first to enable multi-signature setup. This provides a verification token for secure configuration.
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="warning"
+                        onClick={handleUnlockForModification}
+                        startIcon={<LockOpenIcon />}
+                        sx={{ ml: 2 }}
+                      >
+                        Unlock with Seed Phrase
+                      </Button>
+                    </Box>
                   </Box>
                 )}
                 

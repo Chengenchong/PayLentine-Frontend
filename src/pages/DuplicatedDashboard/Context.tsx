@@ -553,7 +553,7 @@ export default function DuplicatedDashboardPage() {
   const handleRejectionSubmit = async (transactionId: number, reason: string) => {
     try {
       console.log('❌ Rejecting transaction:', transactionId);
-      await rejectTransaction(transactionId, { rejectionReason: reason });
+      await rejectTransaction(transactionId, { reason: reason });
       
       // Remove current transaction from queue and show next one
       const remainingQueue = pendingQueue.slice(1);

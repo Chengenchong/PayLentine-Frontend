@@ -80,7 +80,7 @@ export default function MultiSignNotifications({ onNotificationClick }: MultiSig
   };
 
   const handleReject = async (transactionId: number, reason: string) => {
-    await rejectTransaction(transactionId, { rejectionReason: reason });
+            await rejectTransaction(transactionId, { reason: reason });
   };
 
   const formatCurrency = (amount: number, currency: string = 'USD') => {

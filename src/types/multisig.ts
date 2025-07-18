@@ -65,7 +65,7 @@ export interface ApproveTransactionRequest {
 }
 
 export interface RejectTransactionRequest {
-  rejectionReason: string;
+  reason: string;
 }
 
 export interface MultiSignStatsResponse {
