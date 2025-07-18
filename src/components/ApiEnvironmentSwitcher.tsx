@@ -15,7 +15,7 @@ import {
 import { setApiEnvironment, getCurrentBaseUrl } from '../services/api';
 
 const ApiEnvironmentSwitcher: React.FC = () => {
-  const [isDevelopment, setIsDevelopment] = useState(false);
+  const [isDevelopment, setIsDevelopment] = useState(true); // Default to development (localhost)
   const [currentUrl, setCurrentUrl] = useState(getCurrentBaseUrl());
 
   const handleEnvironmentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,12 +59,16 @@ const ApiEnvironmentSwitcher: React.FC = () => {
         <Typography variant="body2">
           <strong>Current API Base URL:</strong> {currentUrl}
         </Typography>
+        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          Note: Currently configured to always use localhost. To switch back to remote API, 
+          uncomment the production URL in src/constants/api.ts and src/services/api.ts
+        </Typography>
       </Alert>
 
       <Typography variant="body2" color="text.secondary">
         {isDevelopment
-          ? '⚠️ Development mode: API calls will be made to your local backend server.'
-          : '✅ Production mode: API calls will be made to the deployed backend server.'}
+          ? '🏠 Both modes currently point to localhost. Make sure your local backend is running on port 3001.'
+          : '🏠 Currently configured for localhost development. Remote API is commented out.'}
       </Typography>
     </Paper>
   );
