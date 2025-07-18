@@ -41,6 +41,25 @@ export const updateMultiSignSettings = async (settings: Partial<MultiSignSetting
   }
 };
 
+// Update user's multi-signature settings using email-based API
+export const updateMultiSignSettingsByEmail = async (settings: {
+  isEnabled: boolean;
+  thresholdAmount: number;
+  signerEmail?: string;
+  requiresSeedPhrase?: boolean;
+}): Promise<any> => {
+  try {
+    const response = await apiRequest('/multisig/settings-by-email', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+    return response;
+  } catch (error) {
+    console.error('Update multi-sig settings by email error:', error);
+    throw error;
+  }
+};
+
 // Check if a transaction requires multi-signature approval
 export const checkTransactionRequired = async (amount: number, currency: string = 'USD'): Promise<CheckRequiredResponse> => {
   try {
@@ -72,14 +91,94 @@ export const createPendingTransaction = async (transaction: CreatePendingTransac
 };
 
 // Get transactions pending user's approval
-export const getPendingApprovals = async (): Promise<MultiSignResponse<PendingTransaction[]>> => {
+export const getPendingApprovals = async (
+  transactionType?: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<MultiSignResponse<PendingTransaction[]>> => {
+  const transactionTypes = ['wallet_transfer', 'payment', 'community_market', 'withdrawal'];
+  
   try {
-    const response = await apiRequest(API_ENDPOINTS.MULTISIG.PENDING_APPROVALS, {
+    // Build query string with all parameters
+    const queryParams = new URLSearchParams();
+    if (transactionType) {
+      queryParams.set('transaction_type', transactionType);
+    }
+    queryParams.set('page', page.toString());
+    queryParams.set('limit', limit.toString());
+    
+    const endpoint = `${API_ENDPOINTS.MULTISIG.PENDING_APPROVALS}?${queryParams.toString()}`;
+    
+    console.log('🔍 Fetching pending approvals from:', endpoint);
+    console.log(`📄 Pagination: Page ${page}, ${limit} items per page`);
+    
+    const response = await apiRequest(endpoint, {
       method: 'GET',
     });
+    
+    // Transform backend response to match frontend expectations
+    if (response.transactions) {
+      return {
+        success: true,
+        data: response.transactions,
+        message: 'Successfully fetched pending approvals',
+        pagination: {
+          currentPage: response.page || 1,
+          totalPages: response.totalPages || 1,
+          totalItems: response.total || 0,
+          itemsPerPage: limit,
+          hasNextPage: (response.page || 1) < (response.totalPages || 1),
+          hasPreviousPage: (response.page || 1) > 1,
+        }
+      } as MultiSignResponse<PendingTransaction[]>;
+    }
+    
     return response as MultiSignResponse<PendingTransaction[]>;
   } catch (error) {
     console.error('Get pending approvals error:', error);
+    
+    // Check if it's the specific "undefined" parameter error
+    if (error instanceof Error && error.message.includes('invalid "undefined" value')) {
+      console.log('⚠️ Backend expects transaction_type parameter. Trying to fetch all transaction types...');
+      
+      // Try to get all transaction types and combine results
+      const allTransactions: PendingTransaction[] = [];
+      
+      for (const type of transactionTypes) {
+        try {
+          const retryParams = new URLSearchParams();
+          retryParams.set('transaction_type', type);
+          retryParams.set('page', page.toString());
+          retryParams.set('limit', limit.toString());
+          
+          const endpoint = `${API_ENDPOINTS.MULTISIG.PENDING_APPROVALS}?${retryParams.toString()}`;
+          console.log(`🔄 Fetching transactions for type: ${type} (Page ${page}, ${limit} items)`);
+          
+          const response = await apiRequest(endpoint, {
+            method: 'GET',
+          });
+          
+          // Handle both new backend format and old format
+          if (response.transactions && Array.isArray(response.transactions)) {
+            allTransactions.push(...response.transactions);
+          } else if (response.success && response.data && Array.isArray(response.data)) {
+            allTransactions.push(...response.data);
+          }
+        } catch (typeError) {
+          console.log(`⚠️ No transactions found for type: ${type}`);
+          // Continue to next type
+        }
+      }
+      
+      console.log(`✅ Found ${allTransactions.length} total pending transactions across all types`);
+      
+      return {
+        success: true,
+        data: allTransactions,
+        message: 'Successfully fetched pending approvals'
+      } as MultiSignResponse<PendingTransaction[]>;
+    }
+    
     throw error;
   }
 };

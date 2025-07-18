@@ -5,9 +5,14 @@ export interface MultiSignSettings {
   isEnabled: boolean;
   thresholdAmount: number;
   requiresSeedPhrase?: boolean;
+  locked?: boolean;
   partnerUserId?: number;
   partnerEmail?: string;
   partnerName?: string;
+  // Backend might use these field names
+  signerUserId?: number;
+  signerEmail?: string;
+  signerName?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -52,6 +57,7 @@ export interface CreatePendingTransactionRequest {
     type: string;
     [key: string]: any;
   };
+  expiresInHours?: number;
 }
 
 export interface ApproveTransactionRequest {
@@ -59,7 +65,7 @@ export interface ApproveTransactionRequest {
 }
 
 export interface RejectTransactionRequest {
-  rejectionReason: string;
+  reason: string;
 }
 
 export interface MultiSignStatsResponse {
@@ -97,6 +103,15 @@ export interface MultiSignResponse<T = any> {
     message: string;
   }>;
   timestamp?: string;
+  // Pagination metadata (when data is an array)
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
 }
 
 export interface ValidateSeedPhraseRequest {

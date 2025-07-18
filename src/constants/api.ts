@@ -6,9 +6,10 @@ export const API_ENVIRONMENTS = {
 } as const;
 
 // Use production API for deployment, development API for local development
-export const BASE_URL = process.env.NODE_ENV === 'development' 
-  ? API_ENVIRONMENTS.DEVELOPMENT 
-  : API_ENVIRONMENTS.PRODUCTION;
+export const BASE_URL =
+  process.env.NODE_ENV === 'development'
+    ? API_ENVIRONMENTS.DEVELOPMENT
+    : API_ENVIRONMENTS.PRODUCTION;
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -17,6 +18,13 @@ export const API_ENDPOINTS = {
     LOGIN: '/auth/login',
     PROFILE: '/auth/profile',
     CHANGE_PASSWORD: '/auth/change-password',
+  },
+  CONTACTS: {
+    BASE: '/contacts',
+    ADD_BY_EMAIL: '/contacts/add-by-email',
+    SEARCH: '/contacts/search',
+    BY_ID: '/contacts', // Will append /{contactId}
+    VERIFY: '/contacts', // Will append /{contactId}/verify
   },
   MULTISIG: {
     SETTINGS: '/multisig/settings',
