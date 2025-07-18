@@ -29,6 +29,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Chip,
   Stepper,
   Step,
   StepLabel,
@@ -85,6 +86,9 @@ import {
   Legend,
 } from 'recharts';
 import { useMultiSign, useSafeMultiSign } from '../MultiSign-Settings/Content';
+import { createPendingTransaction, getPendingApprovals, approveTransaction, rejectTransaction } from '../../services/multisig';
+import MultiSignApprovalDialog from '../../components/MultiSignApprovalDialog';
+import type { PendingTransaction } from '../../types/multisig';
 
 // Color palette
 const COLORS = {
@@ -452,7 +456,13 @@ export default function DuplicatedDashboardPage() {
   // Simulate current user (replace with real user from auth/db)
   const currentUser = { id: 'C002', name: 'Vanessa Saldia' }; // User B for demo
   const { enabled, threshold, userB } = useSafeMultiSign();
-  const [pendingApproval, setPendingApproval] = useState<null | { amount: string; from: string }>(null);
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  
+  // Manual pending requests check
+  const [isCheckingPending, setIsCheckingPending] = useState(false);
+  const [pendingQueue, setPendingQueue] = useState<PendingTransaction[]>([]);
+  const [currentPendingTransaction, setCurrentPendingTransaction] = useState<PendingTransaction | null>(null);
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
 
   // Get current date in 'D MMM YYYY' format
   const currentDate = useMemo(() => {
@@ -472,6 +482,103 @@ export default function DuplicatedDashboardPage() {
     setMobileDrawerOpen(!mobileDrawerOpen);
   };
 
+  // Manual check for pending requests
+  const handleCheckPendingRequests = async () => {
+    setIsCheckingPending(true);
+    
+    try {
+      console.log('🔍 Manually checking for pending multi-signature requests...');
+      
+      // First try without specific transaction type (gets all types with pagination)
+      let response;
+      try {
+        response = await getPendingApprovals(undefined, 1, 50); // Get first 50 items
+      } catch (error) {
+        // If it fails with undefined parameter error, try with specific transaction type
+        console.log('🔄 Retrying with specific transaction type...');
+        response = await getPendingApprovals('wallet_transfer', 1, 50);
+      }
+      
+      console.log('📝 Full response received:', response);
+      
+      if (response.success && response.data && response.data.length > 0) {
+        console.log('🔔 Found pending requests:', response.data.length);
+        console.log('📋 First transaction:', response.data[0]);
+        setPendingQueue(response.data);
+        setCurrentPendingTransaction(response.data[0]);
+        setApprovalDialogOpen(true);
+      } else {
+        console.log('✅ No pending requests found');
+        console.log('🔍 Response structure:', {
+          success: response.success,
+          hasData: !!response.data,
+          dataLength: response.data?.length,
+          dataType: typeof response.data
+        });
+        alert('No pending approval requests found.');
+      }
+    } catch (error) {
+      console.error('❌ Error checking pending requests:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to check pending requests: ${errorMessage}`);
+    } finally {
+      setIsCheckingPending(false);
+    }
+  };
+
+  // Handle approval of current transaction
+  const handleApprovalSubmit = async (transactionId: number, message?: string) => {
+    try {
+      console.log('✅ Approving transaction:', transactionId);
+      await approveTransaction(transactionId, { approvalMessage: message });
+      
+      // Remove current transaction from queue and show next one
+      const remainingQueue = pendingQueue.slice(1);
+      setPendingQueue(remainingQueue);
+      
+      if (remainingQueue.length > 0) {
+        setCurrentPendingTransaction(remainingQueue[0]);
+      } else {
+        setCurrentPendingTransaction(null);
+        setApprovalDialogOpen(false);
+        alert('All pending requests have been processed!');
+      }
+    } catch (error) {
+      console.error('❌ Error approving transaction:', error);
+      alert('Failed to approve transaction. Please try again.');
+    }
+  };
+
+  // Handle rejection of current transaction
+  const handleRejectionSubmit = async (transactionId: number, reason: string) => {
+    try {
+      console.log('❌ Rejecting transaction:', transactionId);
+      await rejectTransaction(transactionId, { reason: reason });
+      
+      // Remove current transaction from queue and show next one
+      const remainingQueue = pendingQueue.slice(1);
+      setPendingQueue(remainingQueue);
+      
+      if (remainingQueue.length > 0) {
+        setCurrentPendingTransaction(remainingQueue[0]);
+      } else {
+        setCurrentPendingTransaction(null);
+        setApprovalDialogOpen(false);
+        alert('All pending requests have been processed!');
+      }
+    } catch (error) {
+      console.error('❌ Error rejecting transaction:', error);
+      alert('Failed to reject transaction. Please try again.');
+    }
+  };
+
+  // Handle closing approval dialog
+  const handleApprovalDialogClose = () => {
+    setApprovalDialogOpen(false);
+    setCurrentPendingTransaction(null);
+    setPendingQueue([]);
+  };
+
   const handlePayOpen = () => {
     setPayDialogOpen(true);
     setPayStep(0);
@@ -481,17 +588,67 @@ export default function DuplicatedDashboardPage() {
     setPayForm({ ...payForm, [e.target.name]: e.target.value });
   const handlePayNext = () => setPayStep((s) => s + 1);
   const handlePayBack = () => setPayStep((s) => s - 1);
-  const handlePaySubmit = (e: { preventDefault: () => void }) => {
+  const handlePaySubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    // Check if multisig triggers
-    if (
-      enabled &&
-      Number(payForm.amount) > threshold &&
-      userB &&
-      userB.id !== currentUser.id // Only trigger approval if not User B
-    ) {
-      // Simulate sending to User B for approval
-      setPendingApproval({ amount: payForm.amount, from: currentUser.name });
+    
+    setIsSubmittingPayment(true);
+    
+    try {
+      // Check if multisig triggers
+      if (
+        enabled &&
+        Number(payForm.amount) > threshold &&
+        userB &&
+        userB.id.toString() !== currentUser.id // Only trigger approval if not User B
+      ) {
+        // Create pending transaction for multi-signature approval
+        const transactionData = {
+          transactionType: 'wallet_transfer' as const,
+          amount: Number(payForm.amount),
+          currency: selectedCurrency.code,
+          recipientAddress: payForm.recipient,
+          description: payForm.note || `Payment to ${payForm.recipient}`,
+          transactionData: {
+            type: 'payment',
+            recipient: payForm.recipient,
+            recipientCountry: payForm.recipientCountry,
+            reference: payForm.reference,
+            currency: selectedCurrency.code,
+          },
+          expiresInHours: 24, // 24 hours expiration
+        };
+
+        console.log('Creating pending transaction for multi-signature approval:', transactionData);
+        
+        const response = await createPendingTransaction(transactionData);
+        
+        if (response.success) {
+          console.log('Multi-signature transaction created successfully:', response.data);
+          
+          // Show success message
+          alert(`Payment request sent for approval! Transaction ID: ${response.data?.id}\n\nThe transaction requires approval from ${userB.name} since it's above the ${threshold} threshold.`);
+          
+          // Close dialog and reset form
+          setPayDialogOpen(false);
+          setPayForm({
+            amount: '',
+            recipient: '',
+            recipientCountry: '',
+            note: '',
+            reference: '',
+          });
+          setPayStep(0);
+        } else {
+          throw new Error(response.message || 'Failed to create pending transaction');
+        }
+        
+        return;
+      }
+      
+      // Normal payment logic here (no multi-signature required)
+      console.log('Processing normal payment:', payForm);
+      alert('Payment processed successfully!');
+      
       setPayDialogOpen(false);
       setPayForm({
         amount: '',
@@ -501,18 +658,13 @@ export default function DuplicatedDashboardPage() {
         reference: '',
       });
       setPayStep(0);
-      return;
+      
+    } catch (error) {
+      console.error('Payment submission error:', error);
+      alert(`Payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSubmittingPayment(false);
     }
-    // Normal payment logic here
-    setPayDialogOpen(false);
-    setPayForm({
-      amount: '',
-      recipient: '',
-      recipientCountry: '',
-      note: '',
-      reference: '',
-    });
-    setPayStep(0);
   };
 
   const handleRequestOpen = () => {
@@ -551,10 +703,6 @@ export default function DuplicatedDashboardPage() {
 
   const paySteps = ['Amount', 'Recipient', 'Option', 'Review & Pay'];
   const requestSteps = ['Amount', 'Recipient', 'Review & Request'];
-
-  // Show approval popup for User B if pendingApproval exists and currentUser is User B
-  const showApprovalPopup =
-    pendingApproval && userB && currentUser.id === userB.id;
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', background: COLORS.bg }}>
@@ -1035,6 +1183,30 @@ export default function DuplicatedDashboardPage() {
           mt: isMobile ? '80px' : '80px',
         }}
       >
+        {/* Manual Pending Requests Check */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleCheckPendingRequests}
+            disabled={isCheckingPending}
+            startIcon={<Notifications />}
+            sx={{
+              borderRadius: 2,
+              fontWeight: 600,
+              textTransform: 'none',
+              px: 3,
+              py: 1,
+              boxShadow: 2,
+              '&:hover': {
+                boxShadow: 3,
+              },
+            }}
+          >
+            {isCheckingPending ? 'Checking...' : 'Check Pending Requests'}
+          </Button>
+        </Box>
+        
         {/* Top Cards and Balance */}
         <Box
           sx={{
@@ -2184,13 +2356,14 @@ export default function DuplicatedDashboardPage() {
               <Button
                 type="submit"
                 variant="contained"
+                disabled={isSubmittingPayment}
                 sx={{
                   background: COLORS.fontMain,
                   color: '#fff',
                   fontWeight: 600,
                 }}
               >
-                Send Payment
+                {isSubmittingPayment ? 'Processing...' : 'Send Payment'}
               </Button>
             )}
             <Button onClick={handlePayClose} sx={{ color: COLORS.fontSub }}>
@@ -2805,24 +2978,34 @@ export default function DuplicatedDashboardPage() {
         </form>
       </Dialog>
 
-      {/* Approval Popup for User B */}
-      <Dialog open={!!showApprovalPopup} onClose={() => setPendingApproval(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Multi-Signature Approval Required</DialogTitle>
-        <DialogContent>
-          <Typography gutterBottom>
-            {pendingApproval?.from} wants to make a transaction amount of RM{pendingApproval?.amount}.<br />
-            Please approve the signature.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPendingApproval(null)} color="error" variant="outlined">
-            Cancel
-          </Button>
-          <Button onClick={() => setPendingApproval(null)} color="primary" variant="contained">
-            Approve
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Multi-Signature Approval Dialog */}
+      <MultiSignApprovalDialog
+        transaction={currentPendingTransaction}
+        open={approvalDialogOpen}
+        onClose={handleApprovalDialogClose}
+        onApprove={handleApprovalSubmit}
+        onReject={handleRejectionSubmit}
+        isLoading={false}
+      />
+      
+      {/* Queue Progress Indicator */}
+      {pendingQueue.length > 1 && approvalDialogOpen && (
+        <Box sx={{ 
+          position: 'fixed', 
+          top: 20, 
+          right: 20, 
+          zIndex: 1400,
+          bgcolor: 'primary.main',
+          color: 'white',
+          px: 2,
+          py: 1,
+          borderRadius: 2,
+          fontSize: '0.875rem',
+          fontWeight: 'bold'
+        }}>
+          {pendingQueue.length - pendingQueue.indexOf(currentPendingTransaction || pendingQueue[0])} of {pendingQueue.length}
+        </Box>
+      )}
     </Box>
   );
 }

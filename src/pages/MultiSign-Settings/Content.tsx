@@ -89,6 +89,22 @@ import {
   validateSeedPhrase 
 } from '../../services/multisig';
 import type { MultiSignSettings as BackendMultiSignSettings } from '../../types/multisig';
+import { getContactsForMultiSign } from '../../services/contacts';
+import type { Contact as Contact } from '../../types/contacts';
+
+// Helper function to convert simple contact data to full Contact type
+const toContact = (data: any): Contact => ({
+  id: typeof data.id === 'string' ? parseInt(data.id) || Date.now() : data.id || Date.now(),
+  ownerId: data.ownerId || 1,
+  contactUserId: data.contactUserId || data.id || Date.now(),
+  nickname: data.nickname || data.name || 'Unknown',
+  isVerified: data.isVerified || false,
+  name: data.name || data.nickname || 'Unknown',
+  email: data.email || '',
+  createdAt: data.createdAt,
+  updatedAt: data.updatedAt,
+  contactUser: data.contactUser,
+});
 
 // Safe theme hook that handles SSR
 const useSafeAppTheme = () => {
@@ -120,7 +136,6 @@ const useSafeAppTheme = () => {
 };
 
 // --- MultiSign Context/Provider/Hook ---
-export type Contact = { id: string; name: string; email?: string; };
 
 interface MultiSignSettings {
   enabled: boolean;
@@ -185,29 +200,41 @@ export const MultiSignProvider = ({ children }: { children: ReactNode }) => {
         if (settings.signer && settings.signer.email) {
           // New API format with signer object
           setUserB({
-            id: settings.signer.email,
+            id: parseInt(settings.signer.id) || Date.now(),
+            ownerId: 1,
+            contactUserId: parseInt(settings.signer.id) || Date.now(),
+            nickname: `${settings.signer.firstName} ${settings.signer.lastName}`.trim(),
+            isVerified: true,
             name: `${settings.signer.firstName} ${settings.signer.lastName}`.trim(),
             email: settings.signer.email,
-          });
+          } as Contact);
         } else if (settings.partnerEmail) {
           // Legacy format with partnerEmail
           setUserB({
-            id: settings.partnerEmail,
+            id: Date.now(),
+            ownerId: 1,
+            contactUserId: Date.now(),
+            nickname: settings.partnerName || settings.partnerEmail,
+            isVerified: true,
             name: settings.partnerName || settings.partnerEmail,
             email: settings.partnerEmail,
-          });
+          } as Contact);
         } else if (settings.signerUserId && settings.signerEmail) {
           // Alternative format with signerEmail
           setUserB({
-            id: settings.signerEmail,
+            id: parseInt(settings.signerUserId) || Date.now(),
+            ownerId: 1,
+            contactUserId: parseInt(settings.signerUserId) || Date.now(),
+            nickname: settings.signerName || settings.signerEmail,
+            isVerified: true,
             name: settings.signerName || settings.signerEmail,
             email: settings.signerEmail,
-          });
+          } as Contact);
         } else if (settings.signerUserId) {
           // If we only have signerUserId, try to find the contact
-          const contact = contacts.find(c => c.id === settings.signerUserId.toString() || c.email === settings.signerUserId);
+          const contact = contacts.find((c: any) => c.id === settings.signerUserId || c.email === settings.signerUserId);
           if (contact) {
-            setUserB(contact);
+            setUserB(toContact(contact));
           }
         }
       }
@@ -251,10 +278,14 @@ export const MultiSignProvider = ({ children }: { children: ReactNode }) => {
           // Update userB with response data
           if (response.settings.signer) {
             setUserB({
-              id: response.settings.signer.email,
+              id: parseInt(response.settings.signer.id) || Date.now(),
+              ownerId: 1,
+              contactUserId: parseInt(response.settings.signer.id) || Date.now(),
+              nickname: `${response.settings.signer.firstName} ${response.settings.signer.lastName}`,
+              isVerified: true,
               name: `${response.settings.signer.firstName} ${response.settings.signer.lastName}`,
               email: response.settings.signer.email,
-            });
+            } as Contact);
           }
         }
         return;
@@ -359,7 +390,7 @@ export function useSafeMultiSign() {
   }
 }
 
-// Dummy contacts
+// Dummy contacts - will be replaced by dynamic loading
 const contacts = [
   { id: 'bruno.hoffman@example.com', name: 'Bruno Hoffman', email: 'bruno.hoffman@example.com' },
   { id: 'vanessa.saldia@example.com', name: 'Vanessa Saldia', email: 'vanessa.saldia@example.com' },
@@ -390,11 +421,6 @@ const settingsSections = [
     label: 'Security', 
     icon: <SecurityIcon />,
   },
-  { 
-    id: 'payment', 
-    label: 'Payment', 
-    icon: <PaymentIcon />,
-  },
 ];
 
 // Content Components
@@ -402,7 +428,6 @@ const PreferencesContent = () => {
   const [language, setLanguage] = useState('English');
   const [timezone, setTimezone] = useState('Eastern Time');
   const [currency, setCurrency] = useState('USD ($)');
-  const [preferredTimeSlot, setPreferredTimeSlot] = useState('morning');
   const [autoReorder, setAutoReorder] = useState(true);
   const { mode, setTheme } = useSafeAppTheme();
   const theme = useMuiTheme();
@@ -510,31 +535,7 @@ const PreferencesContent = () => {
             </Box>
           </Box>
 
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
-              Preferred Time Slot
-            </Typography>
-            <RadioGroup
-              value={preferredTimeSlot}
-              onChange={(e) => setPreferredTimeSlot(e.target.value)}
-            >
-              <FormControlLabel
-                value="morning"
-                control={<Radio />}
-                label="Morning (8AM - 12PM)"
-              />
-              <FormControlLabel
-                value="afternoon"
-                control={<Radio />}
-                label="Afternoon (12PM - 6PM)"
-              />
-              <FormControlLabel
-                value="evening"
-                control={<Radio />}
-                label="Evening (6PM - 10PM)"
-              />
-            </RadioGroup>
-          </Box>
+
         </Box>
       </Box>
     </Box>
@@ -880,6 +881,59 @@ const SecurityContent = () => {
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Dynamic contacts state
+  const [dynamicContacts, setDynamicContacts] = useState<Contact[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+
+  // Load contacts from backend
+  const loadContacts = async () => {
+    setContactsLoading(true);
+    try {
+      const backendContacts = await getContactsForMultiSign();
+      if (backendContacts.length > 0) {
+        // Convert backend contacts to Contact format
+        const convertedContacts = backendContacts.map(c => toContact(c));
+        setDynamicContacts(convertedContacts);
+        
+        // Update selected userB with fresh data if it exists
+        if (userB) {
+          const updatedContact = convertedContacts.find(c => c.id === userB.id);
+          if (updatedContact) {
+            setUserB(updatedContact);
+          }
+        }
+      } else {
+        // Fallback to dummy contacts if no backend contacts
+        setDynamicContacts(contacts.map(c => toContact(c)));
+      }
+    } catch (err) {
+      console.error('Failed to load contacts:', err);
+      // Use dummy contacts as fallback
+      setDynamicContacts(contacts.map(c => toContact(c)));
+    } finally {
+      setContactsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadContacts();
+  }, []);
+
+  // Add event listener for contact updates
+  useEffect(() => {
+    const handleContactUpdate = () => {
+      // Refresh contacts when any contact is updated
+      loadContacts();
+    };
+
+    // Listen for custom contact update events
+    window.addEventListener('contactUpdated', handleContactUpdate);
+    
+    return () => {
+      window.removeEventListener('contactUpdated', handleContactUpdate);
+    };
+  }, []);
+
   const handleToggle = () => {
     if (enabled) {
       setShowSeedDialog(true);
@@ -945,6 +999,17 @@ const SecurityContent = () => {
       setLocked(true); // Set locked state first
       await saveToBackend(); // Save to backend with locked state
       setShowReviewDialog(false);
+      
+      // Refresh contacts to ensure we have the latest data
+      await loadContacts();
+      
+      // Update the selected userB with fresh data from backend
+      if (userB) {
+        const updatedContact = dynamicContacts.find(c => c.id === userB.id);
+        if (updatedContact) {
+          setUserB(updatedContact);
+        }
+      }
     } catch (error) {
       console.error('Failed to save multi-signature settings:', error);
       setLocked(false); // Revert locked state on error
@@ -1244,20 +1309,36 @@ const SecurityContent = () => {
                 {/* Partner Selection */}
                 <Box sx={{ mb: 2 }}>
                   <Autocomplete
-                    options={contacts}
-                    getOptionLabel={(option) => `${option.name} (${option.email})`}
+                    options={dynamicContacts.length > 0 ? dynamicContacts : contacts.map(c => toContact(c))}
+                    getOptionLabel={(option) => `${option.name || option.nickname} (${option.email})`}
                     value={userB}
-                    onChange={(_, val) => handleContactSelect(val)}
+                    onChange={(_, val) => !locked && setUserB(val)}
                     renderInput={(params) => (
                       <TextField 
                         {...params} 
-                        label="Select trusted contact" 
+                        label={contactsLoading ? "Loading contacts..." : "Select trusted contact"}
                         size="small"
                         helperText={locked ? "Partner selection is locked. Use unlock button to modify." : "Choose a trusted contact who will approve transactions above the threshold"}
                       />
                     )}
-                    disabled={!enabled || locked}
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    disabled={!enabled || locked || contactsLoading}
+                    loading={contactsLoading}
+                    isOptionEqualToValue={(option, value) => option && value && option.id === value?.id}
+                    renderOption={(props, option) => {
+                      const { key, ...otherProps } = props;
+                      return (
+                        <Box component="li" key={key} {...otherProps}>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {option.name || option.nickname}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {option.email} {option.isVerified && '✓ Verified'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      );
+                    }}
                   />
                 </Box>
                 
@@ -1302,9 +1383,21 @@ const SecurityContent = () => {
                     border: `1px solid ${alpha('#FF9800', 0.3)}`,
                     mb: 2
                   }}>
-                    <Typography variant="body2" sx={{ color: '#F57C00' }}>
-                      ⚠️ <strong>Verification Required:</strong> Please unlock with your seed phrase first to enable multi-signature setup. This provides a verification token for secure configuration.
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" sx={{ color: '#F57C00' }}>
+                        ⚠️ <strong>Verification Required:</strong> Please unlock with your seed phrase first to enable multi-signature setup. This provides a verification token for secure configuration.
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="warning"
+                        onClick={handleUnlockForModification}
+                        startIcon={<LockOpenIcon />}
+                        sx={{ ml: 2 }}
+                      >
+                        Unlock with Seed Phrase
+                      </Button>
+                    </Box>
                   </Box>
                 )}
                 
@@ -1583,11 +1676,11 @@ const SecurityContent = () => {
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                     <Avatar sx={{ width: 32, height: 32, mr: 1, bgcolor: 'primary.main' }}>
-                      {userB?.name.charAt(0)}
+                      {userB?.name?.charAt(0) || userB?.email?.charAt(0) || 'U'}
                     </Avatar>
                     <Box>
                       <Typography variant="body1" fontWeight={600}>
-                        {userB?.name}
+                        {userB?.name || userB?.email || 'Selected Contact'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         ID: {userB?.id}
@@ -1623,7 +1716,7 @@ const SecurityContent = () => {
                     </li>
                     <li>
                       <Typography variant="body2">
-                        All transactions above {formatCurrency(threshold)} will require {userB?.name}'s approval
+                        All transactions above {formatCurrency(threshold)} will require {userB?.name || userB?.email || 'your partner'}'s approval
                       </Typography>
                     </li>
                   </Box>
@@ -1678,7 +1771,7 @@ const SecurityContent = () => {
                       Transactions {'>'}  {formatCurrency(threshold)}
                     </Typography>
                     <Typography variant="body2">
-                      🔒 Requires approval from {userB?.name}
+                      🔒 Requires approval from {userB?.name || userB?.email || 'partner'}
                     </Typography>
                   </Box>
                 </Box>
@@ -1708,180 +1801,7 @@ const SecurityContent = () => {
   );
 };
 
-const PaymentContent = () => {
-  const [defaultPayment, setDefaultPayment] = useState('credit');
-  const [autoPayment, setAutoPayment] = useState(false);
-  const [savedCards, setSavedCards] = useState([
-    { id: 1, type: 'visa', last4: '4242', expiry: '12/25', isDefault: true },
-    { id: 2, type: 'mastercard', last4: '8888', expiry: '03/26', isDefault: false },
-  ]);
-  const [receiptEmails, setReceiptEmails] = useState(true);
-  const [paymentLimits, setPaymentLimits] = useState({
-    daily: 5000,
-    monthly: 50000,
-  });
-  const [transactionFees, setTransactionFees] = useState('standard');
 
-  const paymentMethods = [
-    { value: 'credit', label: 'Credit Card', icon: <CreditCardIcon /> },
-    { value: 'debit', label: 'Debit Card', icon: <CreditCardIcon /> },
-    { value: 'bank', label: 'Bank Transfer', icon: <AccountBalanceIcon /> },
-    { value: 'paypal', label: 'PayPal', icon: <AccountCircleIcon /> },
-  ];
-
-  const handleSetDefault = (cardId: number) => {
-    setSavedCards(cards => 
-      cards.map(card => ({ ...card, isDefault: card.id === cardId }))
-    );
-  };
-
-  const handleRemoveCard = (cardId: number) => {
-    setSavedCards(cards => cards.filter(card => card.id !== cardId));
-  };
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <Typography variant="h5" fontWeight={600} gutterBottom>
-        Payment Settings
-      </Typography>
-      
-      <Grid container spacing={4}>
-        {/* Payment Limits */}
-        <Grid size={{ xs: 12 }}>
-          <Card sx={{ p: 3, mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <AttachMoneyIcon sx={{ mr: 1, color: 'primary.main' }} />
-              <Typography variant="h6" fontWeight={600}>
-                Payment Limits
-              </Typography>
-            </Box>
-            
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body1" gutterBottom>
-                Daily Limit: ${paymentLimits.daily.toLocaleString()}
-              </Typography>
-              <Slider
-                value={paymentLimits.daily}
-                onChange={(_, value) => setPaymentLimits(prev => ({ ...prev, daily: value as number }))}
-                min={1000}
-                max={10000}
-                step={500}
-                marks={[
-                  { value: 1000, label: '$1K' },
-                  { value: 5000, label: '$5K' },
-                  { value: 10000, label: '$10K' },
-                ]}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(value) => `$${value.toLocaleString()}`}
-              />
-            </Box>
-            
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body1" gutterBottom>
-                Monthly Limit: ${paymentLimits.monthly.toLocaleString()}
-              </Typography>
-              <Slider
-                value={paymentLimits.monthly}
-                onChange={(_, value) => setPaymentLimits(prev => ({ ...prev, monthly: value as number }))}
-                min={10000}
-                max={100000}
-                step={5000}
-                marks={[
-                  { value: 10000, label: '$10K' },
-                  { value: 50000, label: '$50K' },
-                  { value: 100000, label: '$100K' },
-                ]}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(value) => `$${value.toLocaleString()}`}
-              />
-            </Box>
-            
-            <Box>
-              <Typography variant="body1" gutterBottom>
-                Transaction Fees
-              </Typography>
-              <FormControl fullWidth size="small">
-                <Select
-                  value={transactionFees}
-                  onChange={(e) => setTransactionFees(e.target.value)}
-                >
-                  <MenuItem value="economy">Economy (2-3 days) - $0.50</MenuItem>
-                  <MenuItem value="standard">Standard (1-2 days) - $1.00</MenuItem>
-                  <MenuItem value="express">Express (Same day) - $2.50</MenuItem>
-                  <MenuItem value="instant">Instant - $5.00</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-          </Card>
-        </Grid>
-
-        {/* Saved Payment Methods */}
-        <Grid size={{ xs: 12 }}>
-          <Card sx={{ p: 3, mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <CreditCardIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6" fontWeight={600}>
-                  Saved Payment Methods
-                </Typography>
-              </Box>
-              <Button variant="outlined" size="small">
-                Add New Card
-              </Button>
-            </Box>
-            
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {savedCards.map((card) => (
-                <Card key={card.id} variant="outlined" sx={{ p: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar sx={{ 
-                        width: 32, 
-                        height: 32, 
-                        mr: 1,
-                        backgroundColor: card.type === 'visa' ? '#1A1F71' : '#EB001B'
-                      }}>
-                        <CreditCardIcon sx={{ fontSize: 16, color: 'white' }} />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body1" fontWeight={600}>
-                          •••• •••• •••• {card.last4}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Expires {card.expiry}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    {card.isDefault && (
-                      <Chip label="Default" color="primary" size="small" />
-                    )}
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    {!card.isDefault && (
-                      <Button 
-                        size="small" 
-                        onClick={() => handleSetDefault(card.id)}
-                      >
-                        Set as Default
-                      </Button>
-                    )}
-                    <Button 
-                      size="small" 
-                      color="error"
-                      onClick={() => handleRemoveCard(card.id)}
-                    >
-                      Remove
-                    </Button>
-                  </Box>
-                </Card>
-              ))}
-            </Box>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
-  );
-};
 
 const SettingsContent = ({ activeSection }: { activeSection: string }) => {
   switch (activeSection) {
@@ -1893,8 +1813,6 @@ const SettingsContent = ({ activeSection }: { activeSection: string }) => {
       return <CustomContent />;
     case 'security':
       return <SecurityContent />;
-    case 'payment':
-      return <PaymentContent />;
     default:
       return <PreferencesContent />;
   }
@@ -1921,7 +1839,7 @@ function MultiSignSettings() {
   };
 
   const handleBackToDashboard = () => {
-    router
+    router.push('/duplicateddashboard');
   };
 
   return (
