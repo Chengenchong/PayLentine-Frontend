@@ -26,6 +26,7 @@ The integration supports the following authentication endpoints:
 
 ## Environment Configuration
 
+
 The system supports two environments:
 
 - **Production**: `https://paylentine-backend-1.onrender.com/api`
