@@ -25,12 +25,14 @@ export const getContacts = async (): Promise<ContactListResponse> => {
     // Transform backend response to include computed fields for compatibility
     const transformedContacts = (response.data || []).map(contact => ({
       ...contact,
-      // Add computed fields for backward compatibility
+      // Add computed fields for backward compatibility - always from database User table
       name: contact.contactUser 
         ? `${contact.contactUser.firstName} ${contact.contactUser.lastName}`.trim()
         : contact.nickname,
       email: contact.contactUser?.email || '',
-      verified: contact.isVerified, // Legacy support
+      // Use verification status from the Contact table (isVerified field)
+      isVerified: contact.isVerified ?? false,
+      verified: contact.isVerified ?? false, // Legacy support
     }));
     
     return {
@@ -70,7 +72,8 @@ export const createContact = async (contactData: CreateContactRequest): Promise<
         ? `${contact.contactUser.firstName} ${contact.contactUser.lastName}`.trim()
         : contact.nickname,
       email: contact.contactUser?.email || '',
-      verified: contact.isVerified, // Legacy support
+      isVerified: contact.isVerified ?? false, // Use Contact table isVerified
+      verified: contact.isVerified ?? false, // Legacy support
     };
     
     return {
@@ -168,7 +171,8 @@ export const updateContact = async (
         ? `${contact.contactUser.firstName} ${contact.contactUser.lastName}`.trim()
         : contact.nickname,
       email: contact.contactUser?.email || '',
-      verified: contact.isVerified, // Legacy support
+      isVerified: contact.isVerified ?? false, // Use Contact table isVerified
+      verified: contact.isVerified ?? false, // Legacy support
     };
     
     return {

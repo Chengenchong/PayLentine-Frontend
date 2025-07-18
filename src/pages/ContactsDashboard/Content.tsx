@@ -161,6 +161,7 @@ const Content = () => {
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to add contact', severity: 'error' });
     }
+    loadContacts(); // Refresh contacts after adding
   };
 
   const handleEditContact = async () => {
@@ -187,6 +188,7 @@ const Content = () => {
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to update contact', severity: 'error' });
     }
+    loadContacts(); // Refresh contacts after adding
   };
 
   const handleDeleteContact = async (contactId: string | number) => {
