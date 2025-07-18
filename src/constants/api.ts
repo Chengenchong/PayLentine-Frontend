@@ -19,6 +19,13 @@ export const API_ENDPOINTS = {
     PROFILE: '/auth/profile',
     CHANGE_PASSWORD: '/auth/change-password',
   },
+  CONTACTS: {
+    BASE: '/contacts',
+    ADD_BY_EMAIL: '/contacts/add-by-email',
+    SEARCH: '/contacts/search',
+    BY_ID: '/contacts', // Will append /{contactId}
+    VERIFY: '/contacts', // Will append /{contactId}/verify
+  },
   MULTISIG: {
     SETTINGS: '/multisig/settings',
     CHECK_REQUIRED: '/multisig/check-required',
