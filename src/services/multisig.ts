@@ -117,18 +117,19 @@ export const getPendingApprovals = async (
     });
     
     // Transform backend response to match frontend expectations
-    if (response.transactions) {
+    const backendResponse = response as any;
+    if (backendResponse.transactions) {
       return {
         success: true,
-        data: response.transactions,
+        data: backendResponse.transactions,
         message: 'Successfully fetched pending approvals',
         pagination: {
-          currentPage: response.page || 1,
-          totalPages: response.totalPages || 1,
-          totalItems: response.total || 0,
+          currentPage: backendResponse.page || 1,
+          totalPages: backendResponse.totalPages || 1,
+          totalItems: backendResponse.total || 0,
           itemsPerPage: limit,
-          hasNextPage: (response.page || 1) < (response.totalPages || 1),
-          hasPreviousPage: (response.page || 1) > 1,
+          hasNextPage: (backendResponse.page || 1) < (backendResponse.totalPages || 1),
+          hasPreviousPage: (backendResponse.page || 1) > 1,
         }
       } as MultiSignResponse<PendingTransaction[]>;
     }
@@ -159,8 +160,9 @@ export const getPendingApprovals = async (
           });
           
           // Handle both new backend format and old format
-          if (response.transactions && Array.isArray(response.transactions)) {
-            allTransactions.push(...response.transactions);
+          const retryBackendResponse = response as any;
+          if (retryBackendResponse.transactions && Array.isArray(retryBackendResponse.transactions)) {
+            allTransactions.push(...retryBackendResponse.transactions);
           } else if (response.success && response.data && Array.isArray(response.data)) {
             allTransactions.push(...response.data);
           }
