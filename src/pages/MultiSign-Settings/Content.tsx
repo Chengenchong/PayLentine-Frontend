@@ -390,11 +390,6 @@ const settingsSections = [
     label: 'Security', 
     icon: <SecurityIcon />,
   },
-  { 
-    id: 'payment', 
-    label: 'Payment', 
-    icon: <PaymentIcon />,
-  },
 ];
 
 // Content Components
@@ -402,7 +397,6 @@ const PreferencesContent = () => {
   const [language, setLanguage] = useState('English');
   const [timezone, setTimezone] = useState('Eastern Time');
   const [currency, setCurrency] = useState('USD ($)');
-  const [preferredTimeSlot, setPreferredTimeSlot] = useState('morning');
   const [autoReorder, setAutoReorder] = useState(true);
   const { mode, setTheme } = useSafeAppTheme();
   const theme = useMuiTheme();
@@ -510,31 +504,7 @@ const PreferencesContent = () => {
             </Box>
           </Box>
 
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
-              Preferred Time Slot
-            </Typography>
-            <RadioGroup
-              value={preferredTimeSlot}
-              onChange={(e) => setPreferredTimeSlot(e.target.value)}
-            >
-              <FormControlLabel
-                value="morning"
-                control={<Radio />}
-                label="Morning (8AM - 12PM)"
-              />
-              <FormControlLabel
-                value="afternoon"
-                control={<Radio />}
-                label="Afternoon (12PM - 6PM)"
-              />
-              <FormControlLabel
-                value="evening"
-                control={<Radio />}
-                label="Evening (6PM - 10PM)"
-              />
-            </RadioGroup>
-          </Box>
+
         </Box>
       </Box>
     </Box>
@@ -1708,180 +1678,7 @@ const SecurityContent = () => {
   );
 };
 
-const PaymentContent = () => {
-  const [defaultPayment, setDefaultPayment] = useState('credit');
-  const [autoPayment, setAutoPayment] = useState(false);
-  const [savedCards, setSavedCards] = useState([
-    { id: 1, type: 'visa', last4: '4242', expiry: '12/25', isDefault: true },
-    { id: 2, type: 'mastercard', last4: '8888', expiry: '03/26', isDefault: false },
-  ]);
-  const [receiptEmails, setReceiptEmails] = useState(true);
-  const [paymentLimits, setPaymentLimits] = useState({
-    daily: 5000,
-    monthly: 50000,
-  });
-  const [transactionFees, setTransactionFees] = useState('standard');
 
-  const paymentMethods = [
-    { value: 'credit', label: 'Credit Card', icon: <CreditCardIcon /> },
-    { value: 'debit', label: 'Debit Card', icon: <CreditCardIcon /> },
-    { value: 'bank', label: 'Bank Transfer', icon: <AccountBalanceIcon /> },
-    { value: 'paypal', label: 'PayPal', icon: <AccountCircleIcon /> },
-  ];
-
-  const handleSetDefault = (cardId: number) => {
-    setSavedCards(cards => 
-      cards.map(card => ({ ...card, isDefault: card.id === cardId }))
-    );
-  };
-
-  const handleRemoveCard = (cardId: number) => {
-    setSavedCards(cards => cards.filter(card => card.id !== cardId));
-  };
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <Typography variant="h5" fontWeight={600} gutterBottom>
-        Payment Settings
-      </Typography>
-      
-      <Grid container spacing={4}>
-        {/* Payment Limits */}
-        <Grid size={{ xs: 12 }}>
-          <Card sx={{ p: 3, mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <AttachMoneyIcon sx={{ mr: 1, color: 'primary.main' }} />
-              <Typography variant="h6" fontWeight={600}>
-                Payment Limits
-              </Typography>
-            </Box>
-            
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body1" gutterBottom>
-                Daily Limit: ${paymentLimits.daily.toLocaleString()}
-              </Typography>
-              <Slider
-                value={paymentLimits.daily}
-                onChange={(_, value) => setPaymentLimits(prev => ({ ...prev, daily: value as number }))}
-                min={1000}
-                max={10000}
-                step={500}
-                marks={[
-                  { value: 1000, label: '$1K' },
-                  { value: 5000, label: '$5K' },
-                  { value: 10000, label: '$10K' },
-                ]}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(value) => `$${value.toLocaleString()}`}
-              />
-            </Box>
-            
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body1" gutterBottom>
-                Monthly Limit: ${paymentLimits.monthly.toLocaleString()}
-              </Typography>
-              <Slider
-                value={paymentLimits.monthly}
-                onChange={(_, value) => setPaymentLimits(prev => ({ ...prev, monthly: value as number }))}
-                min={10000}
-                max={100000}
-                step={5000}
-                marks={[
-                  { value: 10000, label: '$10K' },
-                  { value: 50000, label: '$50K' },
-                  { value: 100000, label: '$100K' },
-                ]}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(value) => `$${value.toLocaleString()}`}
-              />
-            </Box>
-            
-            <Box>
-              <Typography variant="body1" gutterBottom>
-                Transaction Fees
-              </Typography>
-              <FormControl fullWidth size="small">
-                <Select
-                  value={transactionFees}
-                  onChange={(e) => setTransactionFees(e.target.value)}
-                >
-                  <MenuItem value="economy">Economy (2-3 days) - $0.50</MenuItem>
-                  <MenuItem value="standard">Standard (1-2 days) - $1.00</MenuItem>
-                  <MenuItem value="express">Express (Same day) - $2.50</MenuItem>
-                  <MenuItem value="instant">Instant - $5.00</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-          </Card>
-        </Grid>
-
-        {/* Saved Payment Methods */}
-        <Grid size={{ xs: 12 }}>
-          <Card sx={{ p: 3, mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <CreditCardIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6" fontWeight={600}>
-                  Saved Payment Methods
-                </Typography>
-              </Box>
-              <Button variant="outlined" size="small">
-                Add New Card
-              </Button>
-            </Box>
-            
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {savedCards.map((card) => (
-                <Card key={card.id} variant="outlined" sx={{ p: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar sx={{ 
-                        width: 32, 
-                        height: 32, 
-                        mr: 1,
-                        backgroundColor: card.type === 'visa' ? '#1A1F71' : '#EB001B'
-                      }}>
-                        <CreditCardIcon sx={{ fontSize: 16, color: 'white' }} />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body1" fontWeight={600}>
-                          •••• •••• •••• {card.last4}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Expires {card.expiry}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    {card.isDefault && (
-                      <Chip label="Default" color="primary" size="small" />
-                    )}
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    {!card.isDefault && (
-                      <Button 
-                        size="small" 
-                        onClick={() => handleSetDefault(card.id)}
-                      >
-                        Set as Default
-                      </Button>
-                    )}
-                    <Button 
-                      size="small" 
-                      color="error"
-                      onClick={() => handleRemoveCard(card.id)}
-                    >
-                      Remove
-                    </Button>
-                  </Box>
-                </Card>
-              ))}
-            </Box>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
-  );
-};
 
 const SettingsContent = ({ activeSection }: { activeSection: string }) => {
   switch (activeSection) {
@@ -1893,8 +1690,6 @@ const SettingsContent = ({ activeSection }: { activeSection: string }) => {
       return <CustomContent />;
     case 'security':
       return <SecurityContent />;
-    case 'payment':
-      return <PaymentContent />;
     default:
       return <PreferencesContent />;
   }
@@ -1921,7 +1716,7 @@ function MultiSignSettings() {
   };
 
   const handleBackToDashboard = () => {
-    router
+    router.push('/duplicateddashboard');
   };
 
   return (

@@ -17,7 +17,7 @@ import type {
 } from '../types/multisig';
 
 // Hook for managing pending approvals (for signers)
-export const usePendingApprovals = (refreshInterval = 30000) => {
+export const usePendingApprovals = (refreshInterval = 10000) => {
   const [transactions, setTransactions] = useState<PendingTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,15 +31,36 @@ export const usePendingApprovals = (refreshInterval = 30000) => {
       return;
     }
 
+    console.log('🔍 Checking for pending multi-signature approvals...', new Date().toLocaleTimeString());
     setIsLoading(true);
     setError(null);
     try {
-      const response = await getPendingApprovals();
+      // Try to get pending approvals, with fallback for parameter issues
+      let response;
+      try {
+        response = await getPendingApprovals(undefined, 1, 20); // Get first 20 items
+      } catch (paramError: any) {
+        if (paramError.message?.includes('invalid "undefined" value')) {
+          console.log('🔄 Retrying with specific transaction type due to parameter error...');
+          response = await getPendingApprovals('wallet_transfer', 1, 20);
+        } else {
+          throw paramError;
+        }
+      }
+      
+      console.log('📥 Pending approvals response:', response);
+      
       if (response.success && response.data) {
         setTransactions(response.data);
         setLastUpdated(new Date());
+        
+        if (response.data.length > 0) {
+          console.log('🔔 Found pending approvals:', response.data.length);
+        }
       }
     } catch (err: any) {
+      console.error('❌ Error fetching pending approvals:', err);
+      
       // Don't set error if multi-sig is not configured
       if (err.message?.includes('invalid "undefined" value') || 
           err.message?.includes('multi-signature not configured') ||
@@ -74,18 +95,35 @@ export const usePendingApprovals = (refreshInterval = 30000) => {
         // Multi-sig is configured if it's enabled AND has a partner
         const isConfigured = settings.isEnabled && (settings.partnerEmail || settings.partnerUserId);
         setIsMultiSigConfigured(isConfigured);
+        
+        console.log('🔧 Multi-sig configuration check:', {
+          isEnabled: settings.isEnabled,
+          hasPartner: !!(settings.partnerEmail || settings.partnerUserId),
+          isConfigured: isConfigured
+        });
+        
+        if (isConfigured) {
+          console.log('✅ Multi-signature is properly configured. Starting pending approvals polling every 10 seconds...');
+        } else {
+          console.log('⚠️ Multi-signature is not properly configured. Polling disabled.');
+        }
       } else {
         setIsMultiSigConfigured(false);
+        console.log('❌ No multi-signature settings found.');
       }
     } catch (err) {
+      console.error('❌ Error checking multi-sig status:', err);
       setIsMultiSigConfigured(false);
     }
   }, []);
 
   // Auto-refresh pending approvals
   useEffect(() => {
+    console.log('🚀 Setting up multi-signature pending approvals polling...');
+    
     checkMultiSigStatus().then(() => {
       if (isMultiSigConfigured === true) {
+        console.log('⏰ Starting initial pending approvals check...');
         fetchPendingApprovals();
       }
     });
@@ -95,7 +133,13 @@ export const usePendingApprovals = (refreshInterval = 30000) => {
         fetchPendingApprovals();
       }
     }, refreshInterval);
-    return () => clearInterval(interval);
+    
+    console.log(`⏲️ Polling interval set to ${refreshInterval / 1000} seconds`);
+    
+    return () => {
+      console.log('🛑 Clearing pending approvals polling interval');
+      clearInterval(interval);
+    };
   }, [fetchPendingApprovals, refreshInterval, isMultiSigConfigured]);
 
   const handleApprove = async (transactionId: number, data: ApproveTransactionRequest) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Badge,
   IconButton,
@@ -43,11 +43,22 @@ export default function MultiSignNotifications({ onNotificationClick }: MultiSig
     rejectTransaction,
     isLoading,
     error 
-  } = usePendingApprovals();
+  } = usePendingApprovals(10000); // Check every 10 seconds for pending approvals
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<PendingTransaction | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Log when component mounts and when pending approvals change
+  useEffect(() => {
+    console.log('🔔 MultiSignNotifications component mounted - listening for pending approvals every 10 seconds');
+  }, []);
+
+  useEffect(() => {
+    if (pendingCount > 0) {
+      console.log(`🔔 Pending approvals updated: ${pendingCount} transactions waiting for approval`);
+    }
+  }, [pendingCount, transactions]);
 
   const handleNotificationClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
