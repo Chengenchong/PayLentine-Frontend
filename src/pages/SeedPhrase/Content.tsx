@@ -46,27 +46,27 @@ export default function SeedPhraseContent() {
 
     // Get seed phrase from sessionStorage (set during registration)
     let tempSeedPhrase = sessionStorage.getItem('tempSeedPhrase');
-    
+
     // If not found in sessionStorage, check localStorage as backup
     if (!tempSeedPhrase) {
       tempSeedPhrase = localStorage.getItem('tempSeedPhrase');
       console.log('Checking localStorage for tempSeedPhrase:', tempSeedPhrase);
     }
-    
+
     console.log('SeedPhrase component mounted');
     console.log('tempSeedPhrase found:', tempSeedPhrase);
     console.log('All sessionStorage keys:', Object.keys(sessionStorage));
     console.log('All localStorage keys:', Object.keys(localStorage));
-    
+
     if (tempSeedPhrase) {
       // Convert string to array of words
       const seedWords = tempSeedPhrase.trim().split(' ');
       console.log('Seed words array:', seedWords, 'Length:', seedWords.length);
-      
+
       if (seedWords.length === 12) {
         setSeedPhrase(seedWords);
         console.log('Seed phrase set successfully');
-        
+
         // Clear the temporary storage for security ONLY after successful setting
         setTimeout(() => {
           sessionStorage.removeItem('tempSeedPhrase');
@@ -81,7 +81,9 @@ export default function SeedPhraseContent() {
       // No seed phrase found - user may have navigated here directly
       console.error('No seed phrase found in sessionStorage or localStorage');
       console.error('Current URL:', window.location.href);
-      setSeedPhraseError('No seed phrase found. Please complete registration first.');
+      setSeedPhraseError(
+        'No seed phrase found. Please complete registration first.'
+      );
       // Redirect back to register after a delay
       setTimeout(() => {
         router.push('/register');
@@ -192,9 +194,9 @@ export default function SeedPhraseContent() {
 
     if (!hasErrors) {
       setQuizValidated(true);
-      // Auto proceed to dashboard after successful validation
+      // Auto proceed to KYC verification after successful validation
       setTimeout(() => {
-        router.push('/pre-dashboard');
+        router.push('/addverifiedkyc');
       }, 1500);
     }
 
