@@ -5,9 +5,14 @@ export interface MultiSignSettings {
   isEnabled: boolean;
   thresholdAmount: number;
   requiresSeedPhrase?: boolean;
+  locked?: boolean;
   partnerUserId?: number;
   partnerEmail?: string;
   partnerName?: string;
+  // Backend might use these field names
+  signerUserId?: number;
+  signerEmail?: string;
+  signerName?: string;
   createdAt?: string;
   updatedAt?: string;
 }

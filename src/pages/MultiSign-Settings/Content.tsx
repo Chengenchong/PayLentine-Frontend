@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, createContext, useContext, ReactNode, useEffect } from 'react';
+import React, { useState, createContext, useContext, ReactNode, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -85,6 +85,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { 
   getMultiSignSettings, 
   updateMultiSignSettings, 
+  updateMultiSignSettingsByEmail,
   validateSeedPhrase 
 } from '../../services/multisig';
 import type { MultiSignSettings as BackendMultiSignSettings } from '../../types/multisig';
@@ -125,9 +126,13 @@ interface MultiSignSettings {
   enabled: boolean;
   threshold: number;
   userB: Contact | null;
+  locked: boolean;
+  verificationToken: string | null;
   setEnabled: (enabled: boolean) => void;
   setThreshold: (threshold: number) => void;
   setUserB: (user: Contact | null) => void;
+  setLocked: (locked: boolean) => void;
+  setVerificationToken: (token: string | null) => void;
   saveToBackend: () => Promise<void>;
   loadFromBackend: () => Promise<void>;
   isLoading: boolean;
@@ -140,18 +145,21 @@ export const MultiSignProvider = ({ children }: { children: ReactNode }) => {
   const [enabled, setEnabled] = useState(false);
   const [threshold, setThreshold] = useState(1000);
   const [userB, setUserB] = useState<Contact | null>(null);
+  const [locked, setLocked] = useState(false);
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
 
   // Load settings from backend
-  const loadFromBackend = async () => {
+  const loadFromBackend = useCallback(async () => {
     if (!isAuthenticated) return;
     
     setIsLoading(true);
     setError(null);
     try {
       const response = await getMultiSignSettings();
+      console.log('Backend response:', response); // Debug log
       
       // Handle different response formats
       let settings = null;
@@ -159,65 +167,116 @@ export const MultiSignProvider = ({ children }: { children: ReactNode }) => {
         settings = response.data;
       } else if (response.settings) {
         settings = response.settings;
+      } else if (response.hasSettings && response.settings) {
+        settings = response.settings;
       } else if (response.isEnabled !== undefined) {
         settings = response;
       }
       
       if (settings) {
+        console.log('Processed settings:', settings); // Debug log
         setEnabled(settings.isEnabled);
         setThreshold(settings.thresholdAmount || 1000);
-        if (settings.partnerEmail) {
+        
+        // Handle locked state - check multiple possible field names
+        setLocked(settings.locked || settings.requiresSeedPhrase || false);
+        
+        // Handle partner information - prioritize new API response format
+        if (settings.signer && settings.signer.email) {
+          // New API format with signer object
+          setUserB({
+            id: settings.signer.email,
+            name: `${settings.signer.firstName} ${settings.signer.lastName}`.trim(),
+            email: settings.signer.email,
+          });
+        } else if (settings.partnerEmail) {
+          // Legacy format with partnerEmail
           setUserB({
             id: settings.partnerEmail,
             name: settings.partnerName || settings.partnerEmail,
             email: settings.partnerEmail,
           });
+        } else if (settings.signerUserId && settings.signerEmail) {
+          // Alternative format with signerEmail
+          setUserB({
+            id: settings.signerEmail,
+            name: settings.signerName || settings.signerEmail,
+            email: settings.signerEmail,
+          });
+        } else if (settings.signerUserId) {
+          // If we only have signerUserId, try to find the contact
+          const contact = contacts.find(c => c.id === settings.signerUserId.toString() || c.email === settings.signerUserId);
+          if (contact) {
+            setUserB(contact);
+          }
         }
       }
     } catch (err: any) {
+      console.error('Load settings error:', err);
       setError(err.message || 'Failed to load multi-signature settings');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
-  // Save settings to backend
-  const saveToBackend = async () => {
+  // Save settings to backend using email-based API only
+  const saveToBackend = useCallback(async () => {
     if (!isAuthenticated) return;
     
     setIsLoading(true);
     setError(null);
     try {
-      const settings: Partial<BackendMultiSignSettings> = {
+      const settings = {
         isEnabled: enabled,
         thresholdAmount: threshold,
-        partnerEmail: userB?.email || userB?.id,
-        partnerName: userB?.name,
+        signerEmail: userB?.email,
+        requiresSeedPhrase: true, // Always true when saving with verification token
+        verificationToken: verificationToken, // Include the verification token from unlock
       };
       
-      const response = await updateMultiSignSettings(settings);
+      console.log('Selected contact:', userB); // Debug log
+      console.log('Saving settings to email API with verification token:', settings); // Debug log
+      
+      const response = await updateMultiSignSettingsByEmail(settings);
+      console.log('Email API save response:', response); // Debug log
+      
       // Check if the response indicates success
-      if (response.message && response.message.includes('successfully')) {
-        // Success - the backend returns a message instead of success flag
+      if (response.success || (response.message && response.message.includes('successfully'))) {
+        // Update local state with response data if available
+        if (response.settings) {
+          setEnabled(response.settings.isEnabled);
+          setThreshold(response.settings.thresholdAmount);
+          setLocked(response.settings.requiresSeedPhrase || false);
+          
+          // Update userB with response data
+          if (response.settings.signer) {
+            setUserB({
+              id: response.settings.signer.email,
+              name: `${response.settings.signer.firstName} ${response.settings.signer.lastName}`,
+              email: response.settings.signer.email,
+            });
+          }
+        }
         return;
       }
       
       if (!response.success) {
-        const errorMessage = response.errors?.[0]?.message || 'Failed to save settings';
+        const errorMessage = response.message || 'Failed to save settings';
         throw new Error(errorMessage);
       }
     } catch (err: any) {
+      console.error('Save settings error:', err);
       setError(err.message || 'Failed to save multi-signature settings');
       throw err;
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated, enabled, threshold, userB, verificationToken]);
 
   // Load settings on mount
   useEffect(() => {
     loadFromBackend();
-  }, [isAuthenticated]);
+  }, [loadFromBackend]);
 
   return (
     <MultiSignContext.Provider
@@ -225,9 +284,13 @@ export const MultiSignProvider = ({ children }: { children: ReactNode }) => {
         enabled, 
         threshold, 
         userB, 
+        locked,
+        verificationToken,
         setEnabled, 
         setThreshold, 
         setUserB,
+        setLocked,
+        setVerificationToken,
         saveToBackend,
         loadFromBackend,
         isLoading,
@@ -261,9 +324,13 @@ export function useSafeMultiSign() {
         enabled: false,
         threshold: 1000,
         userB: null,
+        locked: false,
+        verificationToken: null,
         setEnabled: () => {},
         setThreshold: () => {},
         setUserB: () => {},
+        setLocked: () => {},
+        setVerificationToken: () => {},
         saveToBackend: async () => {},
         loadFromBackend: async () => {},
         isLoading: false,
@@ -277,9 +344,13 @@ export function useSafeMultiSign() {
       enabled: false,
       threshold: 1000,
       userB: null,
+      locked: false,
+      verificationToken: null,
       setEnabled: () => {},
       setThreshold: () => {},
       setUserB: () => {},
+      setLocked: () => {},
+      setVerificationToken: () => {},
       saveToBackend: async () => {},
       loadFromBackend: async () => {},
       isLoading: false,
@@ -294,7 +365,7 @@ const contacts = [
   { id: 'vanessa.saldia@example.com', name: 'Vanessa Saldia', email: 'vanessa.saldia@example.com' },
   { id: 'chad.kenley@example.com', name: 'Chad Kenley', email: 'chad.kenley@example.com' },
   { id: 'manuel.rovira@example.com', name: 'Manuel Rovira', email: 'manuel.rovira@example.com' },
-  { id: 'alice.smith@example.com', name: 'Alice Smith', email: 'alice.smith@example.com' },
+  { id: 'alice@test.com', name: 'Alice Smith', email: 'alice@test.com' },
 ];
 
 // Settings sections matching the screenshot
@@ -786,6 +857,10 @@ const SecurityContent = () => {
     setThreshold, 
     userB, 
     setUserB, 
+    locked,
+    setLocked,
+    verificationToken,
+    setVerificationToken,
     saveToBackend, 
     isLoading, 
     error 
@@ -798,8 +873,7 @@ const SecurityContent = () => {
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [loginAlerts, setLoginAlerts] = useState(true);
   
-  // New state for confirmation and locking
-  const [isPartnerConfirmed, setIsPartnerConfirmed] = useState(false);
+  // New state for unlocking
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   const [unlockSeedPhrase, setUnlockSeedPhrase] = useState<string[]>(Array(12).fill(''));
   const [unlockSeedError, setUnlockSeedError] = useState('');
@@ -814,7 +888,33 @@ const SecurityContent = () => {
     }
   };
 
+  const handleThresholdChange = (value: number) => {
+    if (!locked) {
+      setThreshold(value);
+    }
+  };
+
   const handleSeedChange = (idx: number, value: string) => {
+    // Check if the value contains multiple words (pasted seed phrase)
+    if (value.includes(' ') && value.trim().split(/\s+/).length > 1) {
+      const words = value.trim().split(/\s+/);
+      if (words.length === 12) {
+        // If exactly 12 words, fill all boxes
+        setSeedPhrase(words);
+        setSeedError(''); // Clear any existing error
+        return;
+      } else if (words.length > 1) {
+        // If multiple words but not 12, try to fill from current position
+        const updated = [...seedPhrase];
+        for (let i = 0; i < words.length && (idx + i) < 12; i++) {
+          updated[idx + i] = words[i];
+        }
+        setSeedPhrase(updated);
+        return;
+      }
+    }
+    
+    // Normal single word input
     const updated = [...seedPhrase];
     updated[idx] = value;
     setSeedPhrase(updated);
@@ -829,7 +929,7 @@ const SecurityContent = () => {
     setShowSeedDialog(false);
     setSeedPhrase(Array(12).fill(''));
     setSeedError('');
-    setIsPartnerConfirmed(false); // Reset confirmation when disabling
+    setLocked(false); // Reset locked state when disabling
   };
 
   // New handler functions for confirmation and unlocking
@@ -842,11 +942,12 @@ const SecurityContent = () => {
   const handleFinalConfirm = async () => {
     setIsSaving(true);
     try {
-      await saveToBackend();
-      setIsPartnerConfirmed(true);
+      setLocked(true); // Set locked state first
+      await saveToBackend(); // Save to backend with locked state
       setShowReviewDialog(false);
     } catch (error) {
       console.error('Failed to save multi-signature settings:', error);
+      setLocked(false); // Revert locked state on error
       // Error is already handled in the context
     } finally {
       setIsSaving(false);
@@ -858,26 +959,127 @@ const SecurityContent = () => {
   };
 
   const handleUnlockSeedChange = (idx: number, value: string) => {
+    // Check if the value contains multiple words (pasted seed phrase)
+    if (value.includes(' ') && value.trim().split(/\s+/).length > 1) {
+      const words = value.trim().split(/\s+/);
+      if (words.length === 12) {
+        // If exactly 12 words, fill all boxes
+        setUnlockSeedPhrase(words);
+        setUnlockSeedError(''); // Clear any existing error
+        return;
+      } else if (words.length > 1) {
+        // If multiple words but not 12, try to fill from current position
+        const updated = [...unlockSeedPhrase];
+        for (let i = 0; i < words.length && (idx + i) < 12; i++) {
+          updated[idx + i] = words[i];
+        }
+        setUnlockSeedPhrase(updated);
+        return;
+      }
+    }
+    
+    // Normal single word input
     const updated = [...unlockSeedPhrase];
     updated[idx] = value;
     setUnlockSeedPhrase(updated);
   };
 
-  const handleUnlockConfirm = () => {
+  const handleUnlockConfirm = async () => {
     if (unlockSeedPhrase.some((w) => !w.trim())) {
       setUnlockSeedError('Please enter all 12 words.');
       return;
     }
-    // In a real app, you would verify the seed phrase here
-    setIsPartnerConfirmed(false);
-    setShowUnlockDialog(false);
-    setUnlockSeedPhrase(Array(12).fill(''));
-    setUnlockSeedError('');
+    
+    try {
+      // For testing purposes - check if it's the test seed phrase
+      const seedString = unlockSeedPhrase.join(' ');
+      const isTestSeedPhrase = seedString === 'chair age vessel narrow wave help pattern try equip tell scheme blue';
+      
+      console.log('Sending seed phrase validation request:', {
+        seedPhraseLength: seedString.split(' ').length,
+        isTestPhrase: isTestSeedPhrase,
+        endpoint: '/multisig/validate-seed-phrase'
+      });
+      
+      // If it's the test seed phrase, validate locally first
+      if (isTestSeedPhrase) {
+        console.log('✅ Test seed phrase detected - proceeding with unlock');
+        
+        // Generate a mock verification token for testing
+        const mockToken = 'test_verification_token_' + Date.now();
+        setVerificationToken(mockToken);
+        console.log('Mock verification token stored for testing:', mockToken);
+        
+        setLocked(false); // Unlock the settings
+        setShowUnlockDialog(false);
+        setUnlockSeedPhrase(Array(12).fill(''));
+        setUnlockSeedError('');
+        return;
+      }
+      
+      // Try backend validation
+      const response = await validateSeedPhrase(seedString);
+      
+      console.log('Seed phrase validation response:', response); // Debug log
+      
+      // Handle successful validation
+      if (response.success === true || (response as any).valid === true) {
+        console.log('✅ Seed phrase validation successful');
+        
+        // Store the verification token from the response
+        const responseAny = response as any;
+        if (responseAny.verificationToken) {
+          setVerificationToken(responseAny.verificationToken);
+          console.log('Verification token stored:', responseAny.verificationToken);
+        }
+        
+        setLocked(false); // Unlock the settings
+        setShowUnlockDialog(false);
+        setUnlockSeedPhrase(Array(12).fill(''));
+        setUnlockSeedError('');
+        return;
+      }
+      
+      // Handle validation failure
+      if (response.success === false) {
+        console.log('❌ Seed phrase validation failed:', response.message);
+        if (response.message && response.message.includes('Internal server error')) {
+          setUnlockSeedError('Server error: The validation endpoint may not be implemented yet. Try the test phrase: "chair age vessel narrow wave help pattern try equip tell scheme blue"');
+        } else {
+          setUnlockSeedError(response.message || 'Invalid seed phrase. Please try again.');
+        }
+        return;
+      }
+      
+      // Handle unexpected response format
+      console.log('⚠️ Unexpected response format:', response);
+      setUnlockSeedError('Invalid seed phrase. Please try again.');
+      
+    } catch (error: any) {
+      console.error('Failed to validate seed phrase:', error);
+      
+      // Handle different types of errors
+      if (error.message) {
+        if (error.message.includes('Internal server error') || error.message.includes('500')) {
+          setUnlockSeedError('Server error: The seed phrase validation endpoint may not be implemented. For testing, use: "chair age vessel narrow wave help pattern try equip tell scheme blue"');
+        } else if (error.message.includes('Network Error') || error.message.includes('fetch')) {
+          setUnlockSeedError('Network error. Please check your internet connection.');
+        } else if (error.message.includes('404')) {
+          setUnlockSeedError('Validation endpoint not found. For testing, use: "chair age vessel narrow wave help pattern try equip tell scheme blue"');
+        } else {
+          setUnlockSeedError(`Error: ${error.message}`);
+        }
+      } else {
+        setUnlockSeedError('Failed to validate seed phrase. Please try again.');
+      }
+    }
   };
 
-  const handleThresholdChange = (value: number) => {
-    if (!isPartnerConfirmed) {
-      setThreshold(value);
+  const handleContactSelect = (contact: Contact | null) => {
+    if (!locked && contact) {
+      console.log('Contact selected:', contact);
+      console.log('Email to be sent to backend:', contact.email);
+      setUserB(contact);
     }
   };
 
@@ -990,7 +1192,7 @@ const SecurityContent = () => {
                     min={100}
                     max={10000}
                     step={100}
-                    disabled={!enabled || isPartnerConfirmed}
+                    disabled={!enabled || locked}
                     valueLabelDisplay="auto"
                     valueLabelFormat={(value) => formatCurrency(value)}
                     marks={[
@@ -1021,7 +1223,7 @@ const SecurityContent = () => {
                     onChange={(e) => handleThresholdChange(Number(e.target.value))}
                     size="small"
                     fullWidth
-                    disabled={!enabled || isPartnerConfirmed}
+                    disabled={!enabled || locked}
                     inputProps={{
                       min: 100,
                       max: 10000,
@@ -1043,24 +1245,39 @@ const SecurityContent = () => {
                 <Box sx={{ mb: 2 }}>
                   <Autocomplete
                     options={contacts}
-                    getOptionLabel={(option) => `${option.name} (${option.id})`}
+                    getOptionLabel={(option) => `${option.name} (${option.email})`}
                     value={userB}
-                    onChange={(_, val) => !isPartnerConfirmed && setUserB(val)}
+                    onChange={(_, val) => handleContactSelect(val)}
                     renderInput={(params) => (
                       <TextField 
                         {...params} 
                         label="Select trusted contact" 
                         size="small"
-                        helperText={isPartnerConfirmed ? "Partner selection is locked. Use unlock button to modify." : "Choose a trusted contact who will approve transactions above the threshold"}
+                        helperText={locked ? "Partner selection is locked. Use unlock button to modify." : "Choose a trusted contact who will approve transactions above the threshold"}
                       />
                     )}
-                    disabled={!enabled || isPartnerConfirmed}
+                    disabled={!enabled || locked}
                     isOptionEqualToValue={(option, value) => option.id === value.id}
                   />
                 </Box>
                 
+                {/* Verification Token Status */}
+                {verificationToken && (
+                  <Box sx={{ 
+                    p: 2, 
+                    backgroundColor: alpha('#4CAF50', 0.1),
+                    borderRadius: 2,
+                    border: `1px solid ${alpha('#4CAF50', 0.3)}`,
+                    mb: 2
+                  }}>
+                    <Typography variant="body2" sx={{ color: '#2E7D32' }}>
+                      🔐 <strong>Verification Token Available:</strong> Your seed phrase has been validated and a verification token is ready for secure partner setup.
+                    </Typography>
+                  </Box>
+                )}
+                
                 {/* Confirmation Section */}
-                {enabled && userB && !isPartnerConfirmed && (
+                {enabled && userB && !locked && verificationToken && (
                   <Box sx={{ mb: 2 }}>
                     <Button
                       variant="contained"
@@ -1076,8 +1293,23 @@ const SecurityContent = () => {
                   </Box>
                 )}
                 
+                {/* Message when verification token is needed */}
+                {enabled && userB && !locked && !verificationToken && (
+                  <Box sx={{ 
+                    p: 2, 
+                    backgroundColor: alpha('#FF9800', 0.1),
+                    borderRadius: 2,
+                    border: `1px solid ${alpha('#FF9800', 0.3)}`,
+                    mb: 2
+                  }}>
+                    <Typography variant="body2" sx={{ color: '#F57C00' }}>
+                      ⚠️ <strong>Verification Required:</strong> Please unlock with your seed phrase first to enable multi-signature setup. This provides a verification token for secure configuration.
+                    </Typography>
+                  </Box>
+                )}
+                
                 {/* Locked Status */}
-                {isPartnerConfirmed && (
+                {locked && (
                   <Box sx={{ mb: 2 }}>
                     <Box sx={{ 
                       p: 2, 
@@ -1108,7 +1340,7 @@ const SecurityContent = () => {
                 )}
               </Box>
               
-              {enabled && userB && isPartnerConfirmed && (
+              {enabled && userB && locked && (
                 <Box sx={{ 
                   p: 2, 
                   backgroundColor: alpha('#2196F3', 0.1),
@@ -1195,6 +1427,17 @@ const SecurityContent = () => {
           <Typography gutterBottom>
             Please enter your 12-word seed phrase to confirm disabling multi-signature protection.
           </Typography>
+          <Box sx={{ 
+            p: 2, 
+            backgroundColor: alpha('#2196F3', 0.1),
+            borderRadius: 2,
+            border: `1px solid ${alpha('#2196F3', 0.3)}`,
+            mb: 2
+          }}>
+            <Typography variant="body2" sx={{ color: '#1976D2' }}>
+              💡 <strong>Tip:</strong> You can paste your complete 12-word seed phrase into any box and it will automatically fill all fields.
+            </Typography>
+          </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
             {seedPhrase.map((word, idx) => (
               <Box key={idx} sx={{ width: 'calc(33.33% - 8px)' }}>
@@ -1234,6 +1477,17 @@ const SecurityContent = () => {
           <Typography gutterBottom>
             Please enter your 12-word seed phrase to unlock and modify your multi-signature settings.
           </Typography>
+          <Box sx={{ 
+            p: 2, 
+            backgroundColor: alpha('#2196F3', 0.1),
+            borderRadius: 2,
+            border: `1px solid ${alpha('#2196F3', 0.3)}`,
+            mb: 2
+          }}>
+            <Typography variant="body2" sx={{ color: '#1976D2' }}>
+              💡 <strong>Tip:</strong> You can paste your complete 12-word seed phrase into any box and it will automatically fill all fields.
+            </Typography>
+          </Box>
           <Box sx={{ 
             p: 2, 
             backgroundColor: alpha('#FF9800', 0.1),

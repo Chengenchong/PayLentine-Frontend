@@ -41,6 +41,25 @@ export const updateMultiSignSettings = async (settings: Partial<MultiSignSetting
   }
 };
 
+// Update user's multi-signature settings using email-based API
+export const updateMultiSignSettingsByEmail = async (settings: {
+  isEnabled: boolean;
+  thresholdAmount: number;
+  signerEmail?: string;
+  requiresSeedPhrase?: boolean;
+}): Promise<any> => {
+  try {
+    const response = await apiRequest('/multisig/settings-by-email', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+    return response;
+  } catch (error) {
+    console.error('Update multi-sig settings by email error:', error);
+    throw error;
+  }
+};
+
 // Check if a transaction requires multi-signature approval
 export const checkTransactionRequired = async (amount: number, currency: string = 'USD'): Promise<CheckRequiredResponse> => {
   try {
