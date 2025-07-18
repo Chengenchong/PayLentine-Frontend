@@ -577,12 +577,12 @@ const Content = () => {
               <Box
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: '200px 200px 150px 100px 120px',
-                  py: 2,
-                  borderBottom: '1px solid #F0F0F0',
-                  fontWeight: 600,
+                  gridTemplateColumns: '1fr 1fr 1fr 120px 150px',
+                  py: 3,
+                  borderBottom: '2px solid #F0F0F0',
+                  fontWeight: 700,
                   color: COLORS.fontMain,
-                  fontSize: 12,
+                  fontSize: 16,
                 }}
               >
                 <Box sx={{ textAlign: 'center' }}>Name</Box>
@@ -593,9 +593,9 @@ const Content = () => {
               </Box>
 
               {/* Contacts List */}
-              <Box sx={{ minHeight: 400 }}>
+              <Box sx={{ minHeight: 500 }}>
                 {paginated.length === 0 ? (
-                  <Typography sx={{ p: 4, textAlign: 'center', color: '#B0B0B0' }}>
+                  <Typography sx={{ p: 6, textAlign: 'center', color: '#B0B0B0', fontSize: 16 }}>
                     {search ? 'No contacts found matching your search.' : 'No contacts yet. Add your first contact!'}
                   </Typography>
                 ) : (
@@ -604,72 +604,74 @@ const Content = () => {
                       key={contact.id}
                       sx={{
                         display: 'grid',
-                        gridTemplateColumns: '200px 200px 150px 100px 120px',
+                        gridTemplateColumns: '1fr 1fr 1fr 120px 150px',
                         alignItems: 'center',
-                        py: 1.5,
+                        py: 2.5,
                         borderBottom:
                           idx === paginated.length - 1
                             ? 'none'
                             : '1px solid #F0F0F0',
                         cursor: 'pointer',
                         '&:hover': { background: '#f3eaff' },
-                        fontSize: 11,
+                        fontSize: 14,
+                        minHeight: 60,
                       }}
                     >
-                      <Box sx={{ textAlign: 'center', fontWeight: 600 }}>
+                      <Box sx={{ textAlign: 'center', fontWeight: 600, px: 2 }}>
                         {contact.name || contact.email?.split('@')[0] || 'Unnamed Contact'}
                       </Box>
-                      <Box sx={{ textAlign: 'center', fontWeight: 500, color: '#666' }}>
+                      <Box sx={{ textAlign: 'center', fontWeight: 500, color: '#666', px: 2 }}>
                         {contact.email}
                       </Box>
-                      <Box sx={{ textAlign: 'center', fontWeight: 500, color: '#666' }}>
+                      <Box sx={{ textAlign: 'center', fontWeight: 500, color: '#666', px: 2 }}>
                         {contact.nickname || '-'}
                       </Box>
                       <Box sx={{ textAlign: 'center' }}>
                         {contact.isVerified ? (
-                          <Typography variant="caption" sx={{ 
+                          <Typography variant="body2" sx={{ 
                             color: '#4CAF50', 
                             fontWeight: 600,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: 0.5
+                            gap: 0.5,
+                            fontSize: 14
                           }}>
-                            <VerifiedUser sx={{ fontSize: 16 }} />
+                            <VerifiedUser sx={{ fontSize: 18 }} />
                             Verified
                           </Typography>
                         ) : (
-                          <Typography variant="caption" sx={{ color: '#FFA630', fontWeight: 600 }}>
+                          <Typography variant="body2" sx={{ color: '#FFA630', fontWeight: 600, fontSize: 14 }}>
                             Unverified
                           </Typography>
                         )}
                       </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
                         <IconButton 
-                          size="small" 
+                          size="medium" 
                           onClick={() => {
                             setEditContact(contact);
                             setEditDialogOpen(true);
                           }}
                           sx={{ color: COLORS.btnIcon2 }}
                         >
-                          <Edit fontSize="small" />
+                          <Edit />
                         </IconButton>
                         {!contact.isVerified && (
                           <IconButton 
-                            size="small" 
+                            size="medium" 
                             onClick={() => handleVerifyContact(contact.id.toString())}
                             sx={{ color: '#4CAF50' }}
                           >
-                            <VerifiedUser fontSize="small" />
+                            <VerifiedUser />
                           </IconButton>
                         )}
                         <IconButton 
-                          size="small" 
+                          size="medium" 
                           onClick={() => handleDeleteContact(contact.id.toString())}
                           sx={{ color: '#f44336' }}
                         >
-                          <Delete fontSize="small" />
+                          <Delete />
                         </IconButton>
                       </Box>
                     </Box>
@@ -680,12 +682,18 @@ const Content = () => {
           )}
 
           {/* Pagination */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, py: 2 }}>
             <Pagination
               count={pageCount}
               page={page}
               onChange={(_, value) => setPage(value)}
-              size="small"
+              size="medium"
+              sx={{
+                '& .MuiPaginationItem-root': {
+                  fontSize: 16,
+                  fontWeight: 500,
+                }
+              }}
             />
           </Box>
         </Paper>
