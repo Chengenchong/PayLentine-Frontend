@@ -10,23 +10,16 @@ import {
 } from '@mui/material';
 import { TrendingUp } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import SignInForm from './SignInForm';
 
 export default function Header() {
   const router = useRouter();
-  const [signInOpen, setSignInOpen] = useState(false);
 
   const handleGetStarted = () => {
     router.push('/register');
   };
 
   const handleSignIn = () => {
-    setSignInOpen(true);
-  };
-
-  const handleCloseSignIn = () => {
-    setSignInOpen(false);
+    router.push('/signin');
   };
 
   const handleLogoClick = () => {
@@ -140,8 +133,6 @@ export default function Header() {
           </Toolbar>
         </Container>
       </AppBar>
-
-      <SignInForm open={signInOpen} onClose={handleCloseSignIn} />
     </>
   );
 }

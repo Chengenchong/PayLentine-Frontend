@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Outfit, Fredoka } from 'next/font/google';
 import './globals.css';
 import ThemeProvider from '../components/ThemeProvider';
+import { MultiSignProvider } from '../pages/MultiSign-Settings/Content';
 
 const outfit = Outfit({
   variable: '--font-outfit',
@@ -31,7 +32,11 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${fredoka.variable} antialiased`}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <MultiSignProvider>
+            {children}
+          </MultiSignProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

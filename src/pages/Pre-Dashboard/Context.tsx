@@ -38,13 +38,13 @@ export default function PreDashboardContent() {
                 clearInterval(readyInterval);
 
                 // Show button after ready text is complete
-                setTimeout(() => setShowButton(true), 1000);
+                setTimeout(() => setShowButton(true), 500);
               }
-            }, 100);
-          }, 500);
+            }, 60);
+          }, 250);
         }
-      }, 100);
-    }, 1000);
+      }, 60);
+    }, 500);
 
     return () => clearTimeout(welcomeTimer);
   }, []);
@@ -53,7 +53,7 @@ export default function PreDashboardContent() {
     setFadeOut(true);
     setTimeout(() => {
       router.push('/duplicateddashboard');
-    }, 1000);
+    }, 600);
   };
 
   if (showDashboard) {

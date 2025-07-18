@@ -34,6 +34,7 @@ import {
   Email,
   Badge,
   CreditCard,
+  AccountBalance,
 } from '@mui/icons-material';
 
 
@@ -62,6 +63,13 @@ interface UserProfile {
     documentNumber: string;
     verificationDate?: string;
     expiryDate?: string;
+  };
+  multiEKyc: {
+    status: 'verified' | 'not_verified';
+    bankName: string;
+    verificationDate?: string;
+    accountVerified: boolean;
+    verificationLevel: 'basic' | 'enhanced' | 'premium';
   };
   employment: {
     employer: string;
@@ -96,6 +104,13 @@ const mockUserProfile: UserProfile = {
     documentNumber: 'US123456789',
     verificationDate: '2024-01-15',
     expiryDate: '2034-01-15',
+  },
+  multiEKyc: {
+    status: 'verified',
+    bankName: 'Chase Bank',
+    verificationDate: '2024-01-20',
+    accountVerified: true,
+    verificationLevel: 'enhanced',
   },
   employment: {
     employer: 'Tech Solutions Inc.',
@@ -166,6 +181,30 @@ export default function ProfileForm({ open, onClose }: ProfileFormProps) {
         return 'warning';
       case 'rejected':
         return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getMultiEKYCStatusColor = (status: string) => {
+    switch (status) {
+      case 'verified':
+        return 'success';
+      case 'not_verified':
+        return 'warning';
+      default:
+        return 'default';
+    }
+  };
+
+  const getVerificationLevelColor = (level: string) => {
+    switch (level) {
+      case 'premium':
+        return 'success';
+      case 'enhanced':
+        return 'info';
+      case 'basic':
+        return 'warning';
       default:
         return 'default';
     }
@@ -417,6 +456,102 @@ export default function ProfileForm({ open, onClose }: ProfileFormProps) {
                 </Box>
               )}
             </Box>
+          </Box>
+
+          <Divider />
+
+          {/* Multi E-KYC Verification */}
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: '#171635' }}>
+                Multi E-KYC Verification
+              </Typography>
+              <Chip
+                label={profile.multiEKyc.status === 'verified' ? 'BANK VERIFIED' : 'NOT VERIFIED'}
+                color={getMultiEKYCStatusColor(profile.multiEKyc.status) as any}
+                size="small"
+                icon={<AccountBalance />}
+              />
+              {profile.multiEKyc.status === 'verified' && (
+                <Chip
+                  label={profile.multiEKyc.verificationLevel.toUpperCase()}
+                  color={getVerificationLevelColor(profile.multiEKyc.verificationLevel) as any}
+                  size="small"
+                  variant="outlined"
+                />
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 250 }}>
+                <TextField
+                  fullWidth
+                  label="Bank Name"
+                  value={profile.multiEKyc.bankName}
+                  disabled
+                  InputProps={{
+                    startAdornment: <AccountBalance sx={{ mr: 1, color: '#666' }} />,
+                  }}
+                />
+              </Box>
+              <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 250 }}>
+                <TextField
+                  fullWidth
+                  label="Verification Status"
+                  value={profile.multiEKyc.status === 'verified' ? 'Verified by Bank' : 'Not Verified'}
+                  disabled
+                />
+              </Box>
+              {profile.multiEKyc.verificationDate && (
+                <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 250 }}>
+                  <TextField
+                    fullWidth
+                    label="Bank Verification Date"
+                    value={profile.multiEKyc.verificationDate}
+                    disabled
+                  />
+                </Box>
+              )}
+              <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 250 }}>
+                <TextField
+                  fullWidth
+                  label="Account Verification"
+                  value={profile.multiEKyc.accountVerified ? 'Account Verified' : 'Account Not Verified'}
+                  disabled
+                />
+              </Box>
+              <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 250 }}>
+                <TextField
+                  fullWidth
+                  label="Verification Level"
+                  value={`${profile.multiEKyc.verificationLevel.charAt(0).toUpperCase() + profile.multiEKyc.verificationLevel.slice(1)} Level`}
+                  disabled
+                  InputProps={{
+                    startAdornment: <VerifiedUser sx={{ mr: 1, color: '#666' }} />,
+                  }}
+                />
+              </Box>
+            </Box>
+            {profile.multiEKyc.status === 'verified' && (
+              <Box sx={{ 
+                mt: 2, 
+                p: 2, 
+                borderRadius: 1, 
+                backgroundColor: '#e8f5e8', 
+                border: '1px solid #4caf50' 
+              }}>
+                <Typography variant="body2" sx={{ 
+                  color: '#2e7d32', 
+                  fontWeight: 600, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1 
+                }}>
+                  <VerifiedUser fontSize="small" />
+                  This individual has been verified by {profile.multiEKyc.bankName} through their Multi E-KYC process, 
+                  providing enhanced identity assurance and compliance with banking regulations.
+                </Typography>
+              </Box>
+            )}
           </Box>
 
           <Divider />

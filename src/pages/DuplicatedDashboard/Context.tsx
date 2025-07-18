@@ -84,6 +84,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { useMultiSign, useSafeMultiSign } from '../MultiSign-Settings/Content';
 
 // Color palette
 const COLORS = {
@@ -448,6 +449,11 @@ export default function DuplicatedDashboardPage() {
   });
   const router = useRouter();
 
+  // Simulate current user (replace with real user from auth/db)
+  const currentUser = { id: 'C002', name: 'Vanessa Saldia' }; // User B for demo
+  const { enabled, threshold, userB } = useSafeMultiSign();
+  const [pendingApproval, setPendingApproval] = useState<null | { amount: string; from: string }>(null);
+
   // Get current date in 'D MMM YYYY' format
   const currentDate = useMemo(() => {
     const now = new Date();
@@ -477,7 +483,27 @@ export default function DuplicatedDashboardPage() {
   const handlePayBack = () => setPayStep((s) => s - 1);
   const handlePaySubmit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    // Here you would handle the payment logic
+    // Check if multisig triggers
+    if (
+      enabled &&
+      Number(payForm.amount) > threshold &&
+      userB &&
+      userB.id !== currentUser.id // Only trigger approval if not User B
+    ) {
+      // Simulate sending to User B for approval
+      setPendingApproval({ amount: payForm.amount, from: currentUser.name });
+      setPayDialogOpen(false);
+      setPayForm({
+        amount: '',
+        recipient: '',
+        recipientCountry: '',
+        note: '',
+        reference: '',
+      });
+      setPayStep(0);
+      return;
+    }
+    // Normal payment logic here
     setPayDialogOpen(false);
     setPayForm({
       amount: '',
@@ -525,6 +551,10 @@ export default function DuplicatedDashboardPage() {
 
   const paySteps = ['Amount', 'Recipient', 'Option', 'Review & Pay'];
   const requestSteps = ['Amount', 'Recipient', 'Review & Request'];
+
+  // Show approval popup for User B if pendingApproval exists and currentUser is User B
+  const showApprovalPopup =
+    pendingApproval && userB && currentUser.id === userB.id;
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', background: COLORS.bg }}>
@@ -2773,6 +2803,25 @@ export default function DuplicatedDashboardPage() {
             </Button>
           </DialogActions>
         </form>
+      </Dialog>
+
+      {/* Approval Popup for User B */}
+      <Dialog open={!!showApprovalPopup} onClose={() => setPendingApproval(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Multi-Signature Approval Required</DialogTitle>
+        <DialogContent>
+          <Typography gutterBottom>
+            {pendingApproval?.from} wants to make a transaction amount of RM{pendingApproval?.amount}.<br />
+            Please approve the signature.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingApproval(null)} color="error" variant="outlined">
+            Cancel
+          </Button>
+          <Button onClick={() => setPendingApproval(null)} color="primary" variant="contained">
+            Approve
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );
